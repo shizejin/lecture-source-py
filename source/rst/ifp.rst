@@ -59,7 +59,7 @@ We'll need the following imports
     import numpy as np
     from quantecon.optimize import brent_max, brentq
     from interpolation import interp
-    from numba import njit
+    from numba import njit, prange, jitclass, deferred_type, typeof
     import matplotlib.pyplot as plt
     %matplotlib inline
 
@@ -400,13 +400,54 @@ Implementation
 .. index::
     single: Optimal Savings; Programming Implementation
 
-First, we build a class called ``ConsumerProblem`` that stores the model primitives.
+First, we build a jitclass called ``ConsumerProblem`` that stores the model primitives.
 
 .. code-block:: python3
 
+    @jitclass([])
+    class LogUtility(object):
+        """
+        A jitclass of log utility.
+        """
+
+        def __init__(self):
+            None
+
+        # the log utility function
+        def u(self, x):
+            return np.log(x)
+
+        # the first derivative of log utility
+        def du(self, x):
+            return 1/x
+
+.. code-block:: python3
+
+    # define the numba type for `LogUtility` jitclass
+    utility_type = deferred_type()
+    utility_type.define(LogUtility.class_type.instance_type)
+
+    # define the numba type of int and float
+    nb_int, nb_float = typeof(0), typeof(0.)
+
+    # specification of the types of each field in `ConsumerProblem` jitclass
+    spec = [
+        ('r', nb_float),
+        ('R', nb_float),
+        ('β', nb_float), 
+        ('Π', nb_float[:, :]),
+        ('z_vals', nb_float[:]),
+        ('b', nb_float),
+        ('grid_max', nb_int),
+        ('grid_size', nb_int),
+        ('asset_grid', nb_float[:]),
+        ('utility', utility_type)
+    ]
+
+    @jitclass(spec)
     class ConsumerProblem:
         """
-        A class that stores primitives for the income fluctuation problem.  The
+        A jitclass that stores primitives for the income fluctuation problem.  The
         income process is assumed to be a finite state Markov chain.
         """
         def __init__(self,
@@ -418,69 +459,66 @@ First, we build a class called ``ConsumerProblem`` that stores the model primiti
                      b=0,                           # Borrowing constraint
                      grid_max=16,
                      grid_size=50,
-                     u=np.log,                      # Utility function
-                     du=njit(lambda x: 1/x)):       # Derivative of utility
+                     utility=LogUtility()):
 
-            self.u, self.du = u, du
+            self.utility = utility
             self.r, self.R = r, 1 + r
             self.β, self.b = β, b
-            self.Π, self.z_vals = np.array(Π), tuple(z_vals)
+            self.Π, self.z_vals = np.array(Π), np.array(z_vals)
             self.asset_grid = np.linspace(-b, grid_max, grid_size)
 
 
-The function ``operator_factory`` returns the operator ``K`` as specified above
+The following defines the operator ``K`` as specified above
 
 .. code-block:: python3
 
-    def operator_factory(cp):
+    @njit
+    def euler_diff(c, a, z, i_z, σ, cp):
         """
-        A function factory for building operator K.
+        The difference of the left hand side and the right hand side
+        of the Euler Equation.
+        """
 
-        Here cp is an instance of ConsumerProblem.
-        """
         # === Simplify names, set up arrays === #
-        R, Π, β, u, b, du = cp.R, cp.Π, cp.β, cp.u, cp.b, cp.du
+        R, Π, β, u, b, du = cp.R, cp.Π, cp.β, cp.utility.u, cp.b, cp.utility.du
         asset_grid, z_vals = cp.asset_grid, cp.z_vals
         γ = R * β
 
+        lhs = du(c)
+        expectation = 0.
+        for i in range(len(z_vals)):
+            expectation += du(interp(asset_grid, σ[:, i], R * a + z - c)) * Π[i_z, i]
+            
+        rhs = max(γ * expectation, du(R * a + z + b))
 
-        @njit
-        def euler_diff(c, a, z, i_z, σ):
-            """
-            The difference of the left-hand side and the right-hand side
-            of the Euler Equation.
-            """
-            lhs = du(c)
-            expectation = 0
-            for i in range(len(z_vals)):
-                expectation += du(interp(asset_grid, σ[:, i], R * a + z - c)) * Π[i_z, i]
-            rhs = max(γ * expectation, du(R * a + z + b))
+        return lhs - rhs
 
-            return lhs - rhs
+    @njit
+    def K(σ, cp):
+        """
+        The operator K.
 
-        @njit
-        def K(σ):
-            """
-            The operator K.
+        Iteration with this operator corresponds to time iteration on the Euler
+        equation.  Computes and returns the updated consumption policy
+        σ.  The array σ is replaced with a function cf that implements
+        univariate linear interpolation over the asset grid for each
+        possible value of z.
+        """
 
-            Iteration with this operator corresponds to time iteration on the Euler
-            equation.  Computes and returns the updated consumption policy
-            σ.  The array σ is replaced with a function cf that implements
-            univariate linear interpolation over the asset grid for each
-            possible value of z.
-            """
-            σ_new = np.empty_like(σ)
-            for i_a in range(len(asset_grid)):
-                a = asset_grid[i_a]
-                for i_z in range(len(z_vals)):
-                    z = z_vals[i_z]
-                    c_star = brentq(euler_diff, 1e-8, R * a + z + b, args=(a, z, i_z, σ)).root
-                    σ_new[i_a, i_z] = c_star
+        # === Simplify names, set up arrays === #
+        R, Π, β, u, b, du = cp.R, cp.Π, cp.β, cp.utility.u, cp.b, cp.utility.du
+        asset_grid, z_vals = cp.asset_grid, cp.z_vals
+        γ = R * β
 
-            return σ_new
+        σ_new = np.empty_like(σ)
+        for i_a in range(len(asset_grid)):
+            a = asset_grid[i_a]
+            for i_z in range(len(z_vals)):
+                z = z_vals[i_z]
+                c_star = brentq(euler_diff, 1e-8, R * a + z + b, args=(a, z, i_z, σ, cp)).root
+                σ_new[i_a, i_z] = c_star
 
-        return K
-
+        return σ_new
 
 ``K`` uses linear interpolation along the asset grid to approximate the value and consumption functions.
 
@@ -489,11 +527,10 @@ to iterate and find the optimal :math:`\sigma`.
 
 .. code-block:: python3
 
+    @njit
     def solve_model(cp,
                     tol=1e-4,
-                    max_iter=1000,
-                    verbose=True,
-                    print_skip=25):
+                    max_iter=1000):
 
         """
         Solves for the optimal policy using time iteration
@@ -501,7 +538,7 @@ to iterate and find the optimal :math:`\sigma`.
         * cp is an instance of ConsumerProblem
         """
 
-        u, β, b, R = cp.u, cp.β, cp.b, cp.R
+        u, β, b, R = cp.utility.u, cp.β, cp.b, cp.R
         asset_grid, z_vals = cp.asset_grid, cp.z_vals
 
         # initial guess of σ
@@ -511,24 +548,16 @@ to iterate and find the optimal :math:`\sigma`.
                 c_max = R * a + z + b
                 σ[i_a, i_z] = c_max
 
-        K = operator_factory(cp)
-
         i = 0
         error = tol + 1
 
+        σ_new = np.copy(σ)
+
         while i < max_iter and error > tol:
-            σ_new = K(σ)
+            σ_new = K(σ, cp)
             error = np.max(np.abs(σ - σ_new))
             i += 1
-            if verbose and i % print_skip == 0:
-                print(f"Error at iteration {i} is {error}.")
             σ = σ_new
-
-        if i == max_iter:
-            print("Failed to converge!")
-
-        if verbose and i < max_iter:
-            print(f"\nConverged in {i} iterations.")
 
         return σ_new
 
@@ -580,9 +609,8 @@ The following figure is a 45 degree diagram showing the law of motion for assets
 .. code-block:: python3
 
     m = ConsumerProblem(r=0.03, grid_max=4)
-    K = operator_factory(m)
 
-    σ_star = solve_model(m, verbose=False)
+    σ_star = solve_model(m)
     a = m.asset_grid
     R, z_vals = m.R, m.z_vals
 
@@ -680,7 +708,7 @@ Exercise 1
     fig, ax = plt.subplots(figsize=(10, 8))
     for r_val in r_vals:
         cp = ConsumerProblem(r=r_val)
-        σ_star = solve_model(cp, verbose=False)
+        σ_star = solve_model(cp)
         ax.plot(cp.asset_grid, σ_star[:, 0], label=f'$r = {r_val:.3f}$')
 
     ax.set(xlabel='asset level', ylabel='consumption (low income)')
@@ -695,6 +723,22 @@ Exercise 2
 
     from quantecon import MarkovChain
 
+    @njit
+    def _compute_asset_series(cp, z_seq, T):
+        """
+        Given a simulated Markov sequence of z, solve for the optimal
+        savings behavior and calculate the time series of length T for
+        assets.
+        """
+        z_vals, R = cp.z_vals, cp.R  # Simplify names
+        σ_star = solve_model(cp)
+        cf = lambda a, i_z: interp(cp.asset_grid, σ_star[:, i_z], a)
+        a = np.zeros(T+1)
+        for t in range(T):
+            i_z = z_seq[t]
+            a[t+1] = R * a[t] + z_vals[i_z] - cf(a[t], i_z)
+        return a
+
     def compute_asset_series(cp, T=500000, verbose=False):
         """
         Simulates a time series of length T for assets, given optimal savings
@@ -702,16 +746,10 @@ Exercise 2
 
         cp is an instance of ConsumerProblem
         """
-        Π, z_vals, R = cp.Π, cp.z_vals, cp.R  # Simplify names
-        mc = MarkovChain(Π)
-        σ_star = solve_model(cp, verbose=False)
-        cf = lambda a, i_z: interp(cp.asset_grid, σ_star[:, i_z], a)
-        a = np.zeros(T+1)
+        mc = MarkovChain(cp.Π)
         z_seq = mc.simulate(T)
-        for t in range(T):
-            i_z = z_seq[t]
-            a[t+1] = R * a[t] + z_vals[i_z] - cf(a[t], i_z)
-        return a
+
+        return _compute_asset_series(cp, z_seq, T)
 
     cp = ConsumerProblem(r=0.03, grid_max=4)
     a = compute_asset_series(cp)
@@ -731,11 +769,16 @@ Exercise 3
     r_vals = np.linspace(0, 0.04, M)
     fig, ax = plt.subplots(figsize=(10, 8))
 
+    # simulate one Markov sequence of z
+    T=250000
+    mc = MarkovChain(cp.Π)
+    z_seq = mc.simulate(T)
+
     for b in (1, 3):
         asset_mean = []
         for r_val in r_vals:
             cp = ConsumerProblem(r=r_val, b=b)
-            mean = np.mean(compute_asset_series(cp, T=250000))
+            mean = np.mean(_compute_asset_series(cp, z_seq, T))
             asset_mean.append(mean)
         ax.plot(asset_mean, r_vals, label=f'$b = {b:d}$')
         print(f"Finished iteration b = {b:d}")
