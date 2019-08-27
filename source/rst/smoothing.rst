@@ -1216,3 +1216,263 @@ models in which the government recognizes that it can manipulate  Arrow securiti
 
 
 In :doc:`optimal taxation with incomplete markets <amss>`, we study an **incomplete-markets** model in which the government  manipulates asset prices.
+
+
+New Examples
+==========================
+
+Here we bring in some new examples, as well as new code for solving for ex-post gross return and cumulative return on the portfolio of government assets.
+
+Ex-Post Gross Return and Cumulative Return
+------------------------------------------
+
+Recall our formula for one period Arrow securities prices:
+
+.. math::
+    q(s_{t+1} = \bar s_j | s_t = \bar s_i ) = \beta P_{i,j}
+
+Also, recall that in the complete markets setup, we computed optimal levels
+for 
+
+.. math::
+    b_{t+1}(s_{t+1} = \bar s_j | s_t = s_i ) = b(\bar s_j) ,
+
+which please note is independent of :math:`i` but depends on :math:`j`
+
+At time :math:`t` in state :math:`s_t = \bar s_i`, the value of government assets (in the tax-smoothing version of the model) is
+
+.. math::
+    \beta \sum_{j=1}^N P_{i,j} b(\bar s_j)
+
+and the ex post one-period gross return from :math:`t` to :math:`t+1` on the portfolio of government assets in state :math:`\bar s_j` at time :math:`t+1` is
+
+.. math::
+    R(\bar s_j | \bar s_i) = \frac{b(\bar s_j) }{ \beta \sum_{j'=1}^N P_{i,j} b(\bar s_{j'}) }
+
+
+The cumulative return earned from putting :math:`1` unit on time :math:`t` goods into the market portfolio of government bonds is
+
+.. math::
+    R^T(s_{t+T}, s_{t+T-1}, \ldots, s_t) \equiv R(s_{t+1} | s_t) R (s_{t+2} | s_{t+1} )
+    \cdots R(s_{t+T} | s_{t+T-1} )
+
+.. code-block:: python3
+
+    def ex_post_gross_return(b, cp):
+        """
+        calculate the ex post one-period gross return on the portfolio
+        of government assets, given b and Q.
+        """
+        Q = cp.β * cp.P
+
+        values = Q @ b
+
+        n = len(b)
+        R = np.zeros((n, n))
+
+        for i in range(n):
+            ind = cp.P[i, :] != 0
+            R[i, ind] = b[ind] / values[i]
+
+        return R
+
+    def cumulative_return(s_path, R):
+        """
+        compute cumulative return from holding 1 unit market portfolio
+        of government bonds, given some simulated state path.
+        """
+        T = len(s_path)
+
+        RT_path = np.empty(T)
+        RT_path[0] = 1
+        RT_path[1:] = np.cumprod([R[s_path[t], s_path[t+1]] for t in range(T-1)])
+
+        return RT_path
+
+.. code-block:: python3
+
+    class TaxSmoothingExample:
+        """
+        construct a tax smoothing example, by relabeling consumption problem class.
+        """
+        def __init__(self, g, P, b0, states, init=0, β=.96,
+                     N_simul=150, random_state=None):
+
+            self.states = states # state names
+            self.cp = ConsumptionProblem(β, g, b0, P, init=init)
+
+            # solve for complete market case
+            self.T_bar, self.b = consumption_complete(self.cp)
+
+            # solve for incomplete market case
+            self.T_path, self.asset_path, self.g_path, self.s_path = \
+                consumption_incomplete(self.cp, N_simul=N_simul,
+                                       random_state=random_state)
+
+            # calculate ex post gross return on government portfolio
+            self.R = ex_post_gross_return(self.b, self.cp)
+
+        def cumulative_return(self, s_path=None):
+
+            if s_path is None:
+                # if s_path not given, use the path in the incomplete market case
+                s_path = self.s_path
+
+            RT_path = cumulative_return(s_path, self.R)
+
+            return RT_path
+
+        def display(self):
+
+            # plot graphs
+            fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+
+            N = len(self.T_path)
+            RT_path = self.cumulative_return()
+
+            ax[0].set_title('Tax collection paths')
+            ax[0].plot(np.arange(N), self.T_path, label='incomplete market')
+            ax[0].plot(np.arange(N), self.T_bar * np.ones(N), label='complete market')
+            ax[0].plot(np.arange(N), self.g_path, label='govt expenditures', alpha=.6, ls='--')
+            ax[0].legend()
+            ax[0].set_xlabel('Periods')
+
+            ax[1].set_title('Government assets paths')
+            ax[1].plot(np.arange(N), self.asset_path, label='incomplete market')
+            ax[1].plot(np.arange(N), self.b[self.s_path], label='complete market')
+            ax[1].plot(np.arange(N), self.g_path, label='govt expenditures', ls='--')
+            ax[1].legend()
+            ax[1].axhline(0, color='k', ls='--')
+            ax[1].set_xlabel('Periods')
+
+            ax[2].set_title('Cumulative return path (complete market)')
+            ax[2].plot(np.arange(N), RT_path, color='b')
+            ax[2].set_xlabel('Periods')
+            ax[2].set_ylabel('Cumulative return', color='b')
+
+            ax2_ = ax[2].twinx()
+            ax2_.plot(np.arange(N), self.g_path, ls='--', color='g')
+            ax2_.set_ylabel('Government expenditures', color='g')
+
+            plt.show()
+
+            # plot detailed information
+            Q = self.cp.β * self.cp.P
+
+            print(f"P \n {self.cp.P}")
+            print(f"Q \n {Q}")
+            print(f"Govt expenditures in {', '.join(self.states)} = {self.cp.y.flatten()}")
+            print(f"Constant tax collections = {self.T_bar}")
+            print(f"Govt assets in {len(self.states)} states = {self.b}")
+
+            print("")
+            print(f"Government tax collections plus asset levels in {', '.join(self.states)}")
+            for i in range(len(self.states)):
+                TB = self.T_bar + self.b[i]
+                print(f"  T+b in {self.states[i]} = {TB}")
+
+            print("")
+            print(f"Total government spending in {', '.join(self.states)}")
+            for i in range(len(self.states)):
+                G = self.cp.y[i, 0] + Q[i, :] @ self.b
+                print(f"  {self.states[i]} = {G}")
+
+            print("")
+            print("Let's see ex-post and ex-ante returns on Arrow securities \n")
+
+            print(f"Ex-post returns to purchase of Arrow securities:")
+            for i in range(len(self.states)):
+                for j in range(len(self.states)):
+                    if Q[i, j] != 0.:
+                        print(f"  π({self.states[j]}|{self.states[i]}) = {1/Q[i, j]}")
+
+            print("")
+            exant = 1 / self.cp.β
+            print(f"Ex-ante returns to purchase of Arrow securities = {exant}")
+
+            print("")
+            print("The Ex-post one-period gross return on the portfolio of government assets")  
+            print(self.R)
+
+            print("")
+            print("The cumulative return earned from holding 1 unit market portfolio of government bonds")
+            print(RT_path[-1])
+
+Parameters
+----------
+
+.. code-block:: python3
+
+    γ = .1
+    λ = .1
+    ϕ = .1
+    θ = .1
+    ψ = .1
+    g_L = .5
+    g_M = .8
+    g_H = 1.2
+    β = .96
+
+Example 1
+---------
+
+This example is designed to emulate the Civil War and WWI
+
+.. math:: 
+    P =
+    \begin{bmatrix}
+        1 - \lambda & \lambda  & 0    \cr
+        0           & 1 - \phi & \phi \cr
+        0           & 0        & 1
+    \end{bmatrix}
+
+where the government expenditure vector  :math:`g = \begin{bmatrix} g_L & g_H & g_M \end{bmatrix}` where :math:`g_L < g_M < g_H`.  Please assume :math:`b_0 = 0` and assume that the initial Markov state is state :math:`1` so that the system starts off in peace.
+
+Please apply the code for both the complete and the incomplete markets tax-smoothing models and plot the outcomes.
+
+.. code-block:: python3
+
+    g_ex1 = [g_L, g_H, g_M]
+    P_ex1 = np.array([[1-λ, λ,  0],
+                      [0, 1-ϕ,  ϕ],
+                      [0,   0,  1]])
+    b0_ex1 = 1. # set b0 = 1
+    states_ex1 = ['peace', 'war', 'postwar']
+
+.. code-block:: python3
+
+    ts_ex1 = TaxSmoothingExample(g_ex1, P_ex1, b0_ex1, states_ex1, random_state=1)
+    ts_ex1.display()
+
+Example 2
+---------
+
+This example captures a permanent peace.  
+
+Here set
+
+.. math::
+    P =
+    \begin{bmatrix}
+        1    & 0        & 0      \cr
+        0    & 1-\gamma & \gamma \cr
+        \phi & 0        & 1-\phi
+    \end{bmatrix}
+                       
+where the government expenditure vector :math:`g = \begin{bmatrix} g_L & g_L & g_H \end{bmatrix}` where :math:`g_L < g_H`. Please assume :math:`b_0 = 0` and assume that the initial Markov state is state :math:`2` so that the system starts off in a temporary peace.  
+
+Please apply the code for both the complete and the incomplete markets tax-smoothing models and plot the outcomes. 
+
+.. code-block:: python3
+
+    g_ex2 = [g_L, g_L, g_H]
+    P_ex2 = np.array([[1,   0,    0],
+                      [0, 1-γ,    γ],
+                      [ϕ,   0, 1-ϕ]])
+    b0_ex2 = 1.
+    states_ex2 = ['peace', 'temporary peace', 'war']
+
+.. code-block:: python3
+
+    ts_ex2 = TaxSmoothingExample(g_ex2, P_ex2, b0_ex2, states_ex2, init=1, random_state=1)
+    ts_ex2.display()
