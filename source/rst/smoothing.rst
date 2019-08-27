@@ -91,11 +91,8 @@ Let's start with some imports:
     import numpy as np
     import quantecon as qe
     import matplotlib.pyplot as plt
-    import scipy.linalg as la
-
-.. code-block:: ipython
-
     %matplotlib inline
+    import scipy.linalg as la
 
 Relationship to Other Lectures
 ------------------------------
