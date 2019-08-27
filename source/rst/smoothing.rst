@@ -91,8 +91,11 @@ Let's start with some imports:
     import numpy as np
     import quantecon as qe
     import matplotlib.pyplot as plt
-    %matplotlib inline
     import scipy.linalg as la
+
+.. code-block:: ipython
+
+    %matplotlib inline
 
 Relationship to Other Lectures
 ------------------------------
@@ -419,24 +422,27 @@ This function computes :math:`b(\bar s_1), b(\bar s_2), \bar c` as outcomes give
         """
 
         def __init__(self,
-                    β=.96,
-                    y=[2, 1.5],
-                    b0=3,
-                    P=np.asarray([[.8, .2],
-                                [.4, .6]])):
+                     β=.96,
+                     y=[2, 1.5],
+                     b0=3,
+                     P=[[.8, .2],
+                        [.4, .6]],
+                     init=0):
             """
             Parameters
             ----------
 
             β : discount factor
-            P : 2x2 transition matrix
             y : list containing the two income levels
             b0 : debt in period 0 (= state_1 debt level)
+            P : 2x2 transition matrix
+            init : index of initial state s0
             """
             self.β = β
-            self.y = y
+            self.y = np.asarray(y)
             self.b0 = b0
-            self.P = P
+            self.P = np.asarray(P)
+            self.init = init
 
 
     def consumption_complete(cp):
@@ -452,29 +458,40 @@ This function computes :math:`b(\bar s_1), b(\bar s_2), \bar c` as outcomes give
         -------
 
             c_bar : constant consumption
-            b1 : rolled over b0
-            b2 : debt in state_2
+            b : optimal debt in each state
 
-        associated with the price system 
+        associated with the price system
 
             Q = β * P
         """
-        β, P, y, b0 = cp.β, cp.P, cp.y, cp.b0   # Unpack
+        β, P, y, b0, init = cp.β, cp.P, cp.y, cp.b0, cp.init   # Unpack
 
-        y1, y2 = y                              # extract income levels
-        b1 = b0                                 # b1 is known to be equal to b0
         Q = β * P                               # assumed price system
 
-        # Using equation (7) calculate b2
-        b2 = (y2 - y1 - (Q[0, 0] - Q[1, 0] - 1) * b1) / (Q[0, 1] + 1 - Q[1, 1])
+        # construct matrices of augmented equation system
+        n = P.shape[0] + 1
 
-        # Using equation (5) calculate c_bar 
-        c_bar = y1 - b0 + Q[0, :] @ np.asarray([b1, b2])
+        y_aug = np.empty((n, 1))
+        y_aug[0, 0] = y[init] - b0
+        y_aug[1:, 0] = y
 
-        return c_bar, b1, b2
+        Q_aug = np.zeros((n, n))
+        Q_aug[0, 1:] = Q[init, :]
+        Q_aug[1:, 1:] = Q
+
+        A = np.zeros((n, n))
+        A[:, 0] = 1
+        A[1:, 1:] = np.eye(n-1)
+
+        x = np.linalg.inv(A - Q_aug) @ y_aug
+
+        c_bar = x[0, 0]
+        b = x[1:, 0]
+
+        return c_bar, b
 
 
-    def consumption_incomplete(cp, N_simul=150):
+    def consumption_incomplete(cp, N_simul=150, random_state=None):
         """
         Computes endogenous values for the incomplete market case.
 
@@ -483,28 +500,29 @@ This function computes :math:`b(\bar s_1), b(\bar s_2), \bar c` as outcomes give
 
         cp : instance of ConsumptionProblem
         N_simul : int
+        random_state : random state for simulating Markov chain
         """
-
-        β, P, y, b0 = cp.β, cp.P, cp.y, cp.b0  # Unpack
+        β, P, y, b0, init = cp.β, cp.P, cp.y, cp.b0, cp.init  # Unpack
         # For the simulation define a quantecon MC class
         mc = qe.MarkovChain(P)
 
         # Useful variables
-        y = np.asarray(y).reshape(2, 1)
-        v = np.linalg.inv(np.eye(2) - β * P) @ y
+        n = len(y)
+        y.shape = (n, 1)
+        v = np.linalg.inv(np.eye(n) - β * P) @ y
 
         # Simulate state path
-        s_path = mc.simulate(N_simul, init=0)
+        s_path = mc.simulate(N_simul, init=init, random_state=random_state)
 
         # Store consumption and debt path
-        b_path, c_path = np.ones(N_simul + 1), np.ones(N_simul)
+        b_path, c_path = np.ones(N_simul+1), np.ones(N_simul)
         b_path[0] = b0
 
         # Optimal decisions from (12) and (13)
         db = ((1 - β) * v - y) / β
 
         for i, s in enumerate(s_path):
-            c_path[i] = (1 - β) * (v - b_path[i] * np.ones((2, 1)))[s, 0]
+            c_path[i] = (1 - β) * (v - b_path[i] * np.ones((n, 1)))[s, 0]
             b_path[i + 1] = b_path[i] + db[s, 0]
 
         return c_path, b_path[:-1], y[s_path], s_path
@@ -517,9 +535,8 @@ Let's test by checking that :math:`\bar c` and :math:`b_2` satisfy the budget co
 .. code-block:: python3
 
     cp = ConsumptionProblem()
-    c_bar, b1, b2 = consumption_complete(cp)
-    debt_complete = np.asarray([b1, b2])
-    np.isclose(c_bar + b2 - cp.y[1] - (cp.β * cp.P)[1, :] @ debt_complete, 0)
+    c_bar, b = consumption_complete(cp)
+    np.isclose(c_bar + b[1] - cp.y[1] - (cp.β * cp.P)[1, :] @ b, 0)
 
 
 
@@ -691,15 +708,13 @@ Let's try this, using the same parameters in both complete and incomplete market
 
 .. code-block:: python3
 
-    np.random.seed(1)
     N_simul = 150
     cp = ConsumptionProblem()
 
-    c_bar, b1, b2 = consumption_complete(cp)
-    debt_complete = np.asarray([b1, b2])
+    c_bar, debt_complete = consumption_complete(cp)
 
-    c_path, debt_path, y_path, s_path = consumption_incomplete(cp,
-                                                               N_simul=N_simul)
+    c_path, debt_path, y_path, s_path = consumption_incomplete(cp, N_simul=N_simul,
+                                                               random_state=1)
 
     fig, ax = plt.subplots(1, 2, figsize=(15, 5))
 
@@ -821,21 +836,19 @@ Here's our code to compute a quantitative example with zero debt in peace time:
     β = .96
     y = [1, 2]
     b0 = 0
-    P = np.asarray([[.8, .2],
-                    [.4, .6]])
+    P = np.array([[.8, .2],
+                  [.4, .6]])
 
     cp = ConsumptionProblem(β, y, b0, P)
     Q = β * P
-    N_simul = 150
 
-    c_bar, b1, b2 = consumption_complete(cp)
-    debt_complete = np.asarray([b1, b2])
+    c_bar, b = consumption_complete(cp)
 
     print(f"P \n {P}")
     print(f"Q \n {Q}")
     print(f"Govt expenditures in peace and war = {y}")
     print(f"Constant tax collections = {c_bar}")
-    print(f"Govt assets in two states = {debt_complete}")
+    print(f"Govt assets in two states = {b}")
 
     msg = """
     Now let's check the government's budget constraint in peace and war.
@@ -844,16 +857,16 @@ Here's our code to compute a quantitative example with zero debt in peace time:
     """
     print(msg)
 
-    AS1 = Q[0, 1] * b2
+    AS1 = Q[0, 1] * b[1]
     print(f"Spending on Arrow war security in peace = {AS1}")
-    AS2 = Q[1, 1] * b2
+    AS2 = Q[1, 1] * b[1]
     print(f"Spending on Arrow war security in war = {AS2}")
 
     print("\n")
     print("Government tax collections plus asset levels in peace and war")
-    TB1 = c_bar + b1
+    TB1 = c_bar + b[0]
     print(f"T+b in peace = {TB1}")
-    TB2 = c_bar + b2
+    TB2 = c_bar + b[1]
     print(f"T+b in war = {TB2}")
 
     print("\n")
@@ -868,9 +881,9 @@ Here's our code to compute a quantitative example with zero debt in peace time:
 
     Π = np.reciprocal(Q)
     exret = Π
-    print(f"Ex-post returns to purchase of Arrow securities = {exret}")
+    print(f"Ex-post returns to purchase of Arrow securities = \n {exret}")
     exant = Π * P
-    print(f"Ex-ante returns to purchase of Arrow securities {exant}")
+    print(f"Ex-ante returns to purchase of Arrow securities \n {exant}")
 
 
 Explanation
