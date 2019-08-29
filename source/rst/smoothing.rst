@@ -386,7 +386,7 @@ of our model, we obtain the following striking results:
 *  The consumer chooses to make consumption perfectly constant across
    time and Markov states.
 
-* State-contingent debt purchases :math:`b_{t+1}(s_{t+1} = \bar s_j | s_t = \bar s_i)` depend only on :math:`bar s_j`
+* State-contingent debt purchases :math:`b_{t+1}(s_{t+1} = \bar s_j | s_t = \bar s_i)` depend only on :math:`\bar s_j`
 
 
 We computed the constant level of consumption :math:`\bar c` and indicated how that level depends on the underlying specifications of preferences, Arrow securities prices,  the stochastic process of exogenous nonfinancial income, and the initial debt level :math:`b_0`
@@ -1337,9 +1337,9 @@ The cumulative return earned from putting :math:`1` unit on time :math:`t` goods
             ax[0].legend()
             ax[0].set_xlabel('Periods')
 
-            ax[1].set_title('Government assets paths')
-            ax[1].plot(np.arange(N), self.asset_path, label='incomplete market')
-            ax[1].plot(np.arange(N), self.b[self.s_path], label='complete market')
+            ax[1].set_title('Government debt paths')
+            ax[1].plot(np.arange(N), -self.asset_path, label='incomplete market')
+            ax[1].plot(np.arange(N), -self.b[self.s_path], label='complete market')
             ax[1].plot(np.arange(N), self.g_path, label='govt expenditures', ls='--')
             ax[1].legend()
             ax[1].axhline(0, color='k', ls='--')
@@ -1363,7 +1363,7 @@ The cumulative return earned from putting :math:`1` unit on time :math:`t` goods
             print(f"Q \n {Q}")
             print(f"Govt expenditures in {', '.join(self.states)} = {self.cp.y.flatten()}")
             print(f"Constant tax collections = {self.T_bar}")
-            print(f"Govt assets in {len(self.states)} states = {self.b}")
+            print(f"Govt debt in {len(self.states)} states = {-self.b}")
 
             print("")
             print(f"Government tax collections plus asset levels in {', '.join(self.states)}")
@@ -1476,3 +1476,111 @@ Please apply the code for both the complete and the incomplete markets tax-smoot
 
     ts_ex2 = TaxSmoothingExample(g_ex2, P_ex2, b0_ex2, states_ex2, init=1, random_state=1)
     ts_ex2.display()
+
+Example 3
+---------
+
+Markov chain:
+
+.. math::
+    P = 
+    \begin{bmatrix}
+   		1 - \lambda & \lambda  & 0      & 0         \cr
+        0           & 1 - \phi & \phi   & 0         \cr
+        0           & 0        & 1-\psi & \psi      \cr
+        \theta      & 0        & 0      & 1 - \theta
+    \end{bmatrix}
+                          
+with government expenditure levels for the four states being
+:math:`\begin{bmatrix} g_L & g_L & g_H & g_H \end{bmatrix}` where :math:`g_L < g_H`.
+Please start with :math:`b_0 = 0` and :math:`s_0 = \bar s_1`. 
+
+.. code-block:: python3
+
+	g_ex3 = [g_L, g_L, g_H, g_H]
+	P_ex3 = np.array([[1-λ,  λ,   0,    0],
+	                  [0,  1-ϕ,   ϕ,     0],
+	                  [0,    0,  1-ψ,    ψ],
+	                  [θ,    0,    0,  1-θ ]])
+	b0_ex3 = 1.
+	states_ex3 = ['peace1', 'peace2', 'war1', 'war2']
+
+.. code-block:: python3
+
+	ts_ex3 = TaxSmoothingExample(g_ex3, P_ex3, b0_ex3, states_ex3, random_state=1)
+	ts_ex3.display()
+
+
+Example 4
+---------
+
+Markov chain:
+
+.. math::
+	P =
+    \begin{bmatrix}
+   		1 - \lambda & \lambda  & 0      & 0          & 0      \cr
+		0           & 1 - \phi & \phi   & 0          & 0      \cr
+        0           & 0        & 1-\psi & \psi       & 0      \cr
+        0           & 0        & 0      & 1 - \theta & \theta \cr
+        0           & 0        & 0      & 0          & 1
+    \end{bmatrix}
+                          
+with government expenditure levels for the five states being
+:math:`\begin{bmatrix} g_L & g_L & g_H & g_H & g_L \end{bmatrix}` where :math:`g_L < g_H`.
+Please start with :math:`b_0 = 0` and :math:`s_0 = \bar s_1`.
+
+.. code-block:: python3
+
+	g_ex4 = [g_L, g_L, g_H, g_H, g_L]
+	P_ex4 = np.array([[1-λ,  λ,   0,     0,    0],
+	                  [0,  1-ϕ,   ϕ,     0,    0],
+	                  [0,    0,  1-ψ,    ψ,    0],
+	                  [0,    0,    0,   1-θ,   θ],
+	                  [0,    0,    0,     0,   1]])
+	b0_ex4 = 1.
+	states_ex4 = ['peace1', 'peace2', 'war1', 'war2', 'forever peace']
+
+.. code-block:: python3
+
+	ts_ex4 = TaxSmoothingExample(g_ex4, P_ex4, b0_ex4, states_ex4, random_state=1)
+	ts_ex4.display()
+
+Example 5
+---------
+
+Markov chain:
+
+.. math::
+    P =
+    \begin{bmatrix}
+   		0 & 1 & 0 & 0 & 0 & 0 & 0 \cr
+        0 & 0 & 1 & 0 & 0 & 0 & 0 \cr
+        0 & 0 & 0 & 1 & 0 & 0 & 0 \cr
+        0 & 0 & 0 & 0 & 1 & 0 & 0 \cr
+        0 & 0 & 0 & 0 & 0 & 1 & 0 \cr
+        0 & 0 & 0 & 0 & 0 & 0 & 1 \cr
+        0 & 0 & 0 & 0 & 0 & 0 & 1 \cr
+    \end{bmatrix}
+                          
+with government expenditure levels for the seven states being
+:math:`\begin{bmatrix} g_L & g_L & g_H & g_H &  g_H & g_H & g_L \end{bmatrix}` where
+:math:`g_L < g_H`. Please start with :math:`b_0 = 0` and :math:`s_0 = \bar s_1`.
+
+.. code-block:: python3
+
+	g_ex5 = [g_L, g_L, g_H, g_H, g_H, g_H, g_L]
+	P_ex5 = np.array([[0, 1, 0, 0, 0, 0, 0],
+	                  [0, 0, 1, 0, 0, 0, 0],
+	                  [0, 0, 0, 1, 0, 0, 0],
+	                  [0, 0, 0, 0, 1, 0, 0],
+	                  [0, 0, 0, 0, 0, 1, 0],
+	                  [0, 0, 0, 0, 0, 0, 1],
+	                  [0, 0, 0, 0, 0, 0, 1]])
+	b0_ex5 = 1.
+	states_ex5 = ['peace1', 'peace2', 'war1', 'war2', 'war3', 'forever peace']
+
+.. code-block:: python3
+
+	ts_ex5 = TaxSmoothingExample(g_ex5, P_ex5, b0_ex5, states_ex5, N_simul=7, random_state=1)
+	ts_ex5.display()
