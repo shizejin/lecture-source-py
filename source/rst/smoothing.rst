@@ -409,7 +409,7 @@ Code
 
 Here's some code that, among other things, contains a function called `consumption_complete()`.
 
-This function computes :math:`b(\bar s_1), b(\bar s_2), \bar c` as outcomes given a set of parameters, under the assumption of complete markets
+This function computes (Zejin's edits: ":math:`b(\bar s_1), b(\bar s_2), \bar c` as outcomes given a set of parameters" -> ":math:`\{ b(\bar s_i) \}_{i=1}^{N}, \bar c` as outcomes given a set of parameters for the general case with N Markov states"), under the assumption of complete markets
 
 .. code-block:: python3
 
@@ -431,7 +431,7 @@ This function computes :math:`b(\bar s_1), b(\bar s_2), \bar c` as outcomes give
 
             β : discount factor
             y : list containing the two income levels
-            b0 : debt in period 0 (= state_1 debt level)
+            b0 : debt in period 0 (= initial state debt level)
             P : 2x2 transition matrix
             init : index of initial state s0
             """
@@ -817,35 +817,92 @@ is the price of one unit of goods next period in state :math:`j` when
 today's Markov state is :math:`i` and :math:`b_i` is the government's
 level of *assets* in Markov state :math:`i`.
 
-That is, :math:`b_i` equals  one-period loans owed to the government that fall due at time :math:`t`.
+That is, :math:`b_i` equals  one-period loans owed to the government that fall due at time :math:`t`. (Zejin's edits: Or if :math:`b_i < 1`, it means the government owes :math:`-b_i` one-period debts to the private sector. This usually happens when the governemnt expenditure during wartime is too high that it needs to sell Arrow securities paying off in peacetime to compensate for.)
 
-As above, we'll assume that the initial Markov state is state :math:`1`.
+Zejin's edits (introduce the ex-post gross return and cumulative return on the portofolio of government asset below) {
+
+This implies that the ex post one-period gross return from :math:`t` to :math:`t+1` on the portfolio of government assets in state :math:`\bar s_j` at time :math:`t+1` is
+
+.. math::
+    R(\bar s_j | \bar s_i) = \frac{b(\bar s_j) }{ \sum_{j'=1}^N Q_{ij} b(\bar s_{j'}) }
+
+where :math:`\sum_{j'=1}^N Q_{ij} b(\bar s_{j'})` is the total government expenditure on insurance in state :math:`\bar s_i`.
+
+Consequently, the cumulative return earned from putting :math:`1` unit on time :math:`t` goods into the market portfolio of government bonds is
+
+.. math::
+    R^T(s_{t+T}, s_{t+T-1}, \ldots, s_t) \equiv R(s_{t+1} | s_t) R (s_{t+2} | s_{t+1} )
+    \cdots R(s_{t+T} | s_{t+T-1} )
+
+Below we define two functions that calculate these return rates. Notice that if :math:`P_{ij}=0`, then :math:`R(\bar s_j | \bar s_i)` is set to be :math:`0` since it is not well-defined.  
+
+}
+
+.. code-block:: python3
+
+    def ex_post_gross_return(b, cp):
+        """
+        calculate the ex post one-period gross return on the portfolio
+        of government assets, given b and Q.
+        """
+        Q = cp.β * cp.P
+
+        values = Q @ b
+
+        n = len(b)
+        R = np.zeros((n, n))
+
+        for i in range(n):
+            ind = cp.P[i, :] != 0
+            R[i, ind] = b[ind] / values[i]
+
+        return R
+
+    def cumulative_return(s_path, R):
+        """
+        compute cumulative return from holding 1 unit market portfolio
+        of government bonds, given some simulated state path.
+        """
+        T = len(s_path)
+
+        RT_path = np.empty(T)
+        RT_path[0] = 1
+        RT_path[1:] = np.cumprod([R[s_path[t], s_path[t+1]] for t in range(T-1)])
+
+        return RT_path
+
+As above, we'll assume that (Zejin's edits: "the initial Markov state is state :math:`1`" -> "the initial Markov state is state :math:`1`, which means the world is initially in peace. It then experiences 3 time periods of war and come back to peace again. The history of states is therefore :math:`\{ peace, war, war, war, peace \}`").
 
 In addition, to simplify our example, we'll set the government's initial
-asset level to :math:`0`, so that :math:`b_1 =0`.
+asset level to (Zejin's edits (to avoid RT being equal to 0): ":math:`0`, so that :math:`b_1 = 0`" -> ":math:`1`, so that :math:`b_1 = 1`").
 
-Here's our code to compute a quantitative example with zero debt in peace time:
+Here's our code to compute a quantitative example with (Zejin's edits: "zero debt" -> "one unit loan") in peace time:
 
 .. code-block:: python3
 
     # Parameters
 
     β = .96
-    y = [1, 2]
-    b0 = 0
+    # Zejin's edits: change notation y to g in the tax-smoothing example
+    g = [1, 2]
+    b0 = 1
     P = np.array([[.8, .2],
                   [.4, .6]])
 
-    cp = ConsumptionProblem(β, y, b0, P)
+    cp = ConsumptionProblem(β, g, b0, P)
     Q = β * P
 
-    c_bar, b = consumption_complete(cp)
+    # Zejin's edits: change notation c_bar to T_bar in the tax-smoothing example
+    T_bar, b = consumption_complete(cp)
+    R = ex_post_gross_return(b, cp)
+    s_path = [0, 1, 1, 1, 0]
+    RT_path = cumulative_return(s_path, R)
 
     print(f"P \n {P}")
     print(f"Q \n {Q}")
-    print(f"Govt expenditures in peace and war = {y}")
-    print(f"Constant tax collections = {c_bar}")
-    print(f"Govt assets in two states = {b}")
+    print(f"Govt expenditures in peace and war = {g}")
+    print(f"Constant tax collections = {T_bar}")
+    print(f"Govt debts in two states = {-b}")
 
     msg = """
     Now let's check the government's budget constraint in peace and war.
@@ -854,26 +911,29 @@ Here's our code to compute a quantitative example with zero debt in peace time:
     """
     print(msg)
 
-    AS1 = Q[0, 1] * b[1]
-    print(f"Spending on Arrow war security in peace = {AS1}")
-    AS2 = Q[1, 1] * b[1]
-    print(f"Spending on Arrow war security in war = {AS2}")
+    AS1 = Q[0, :] @ b
+    # Zejin's edist: "spending on Arrow war security" -> "spending on Arrow security"
+    # since the spending on Arrow peace security is not 0 anymore after we change b0 to 1
+    print(f"Spending on Arrow security in peace = {AS1}")
+    AS2 = Q[1, :] @ b
+    print(f"Spending on Arrow security in war = {AS2}")
 
-    print("\n")
-    print("Government tax collections plus asset levels in peace and war")
-    TB1 = c_bar + b[0]
+    print("")
+    # Zejin's edits: "tax collections plus asset levels" -> "tax collections minus debt levels"
+    print("Government tax collections minus debt levels in peace and war")
+    TB1 = T_bar + b[0]
     print(f"T+b in peace = {TB1}")
-    TB2 = c_bar + b[1]
+    TB2 = T_bar + b[1]
     print(f"T+b in war = {TB2}")
 
-    print("\n")
+    print("")
     print("Total government spending in peace and war")
-    G1 = y[0] + AS1
-    G2 = y[1] + AS2
+    G1 = g[0] + AS1
+    G2 = g[1] + AS2
     print(f"Peace = {G1}")
     print(f"War = {G2}")
 
-    print("\n")
+    print("")
     print("Let's see ex-post and ex-ante returns on Arrow securities")
 
     Π = np.reciprocal(Q)
@@ -882,14 +942,22 @@ Here's our code to compute a quantitative example with zero debt in peace time:
     exant = Π * P
     print(f"Ex-ante returns to purchase of Arrow securities \n {exant}")
 
+    print("")
+    print("The Ex-post one-period gross return on the portfolio of government assets")  
+    print(R)
+
+    print("")
+    print("The cumulative return earned from holding 1 unit market portfolio of government bonds")
+    print(RT_path[-1])
+
 
 Explanation
 -----------
 
-In this example, the government always purchase :math:`0` units of the
+In this example, the government always purchase (Zejin's edits: ":math:`0`" -> ":math:`1`") units of the
 Arrow security that pays off in peace time (Markov state :math:`1`).
 
-But it purchases a positive amount of the security that pays off in war
+(Zejin's edits: "But" -> "And") it purchases a (Zejin's edits: "positive" -> "higher") amount of the security that pays off in war
 time (Markov state :math:`2`).
 
 We recommend plugging the quantities computed above into the government
@@ -901,9 +969,11 @@ This is an example in which
 
 *  during wartime, the government purchases *insurance* against the possibility that war continues another period
 
-*  the insurance does not pay off so long as peace continues
+*  (Zejin's edits: "the insurance does not pay off so long as peace continues" -> "the return rate of the insurance is low so long as peace continues")
 
-*  the insurance pays off when war breaks out or continues
+*  (Zejin's edits: "the insurance pays off when war breaks out or continues" -> "the return rate of the insurance is high when war breaks out or continues")
+
+*  (Zejin's edits, add: "Given the history of states we specified, the value of one unit portfolio of government assets will be doubled in the end, because of the high returns during wartime.")
 
 *Exercise:* try changing the Markov transition matrix so that
 
@@ -918,6 +988,8 @@ This is an example in which
 Also, start the system in Markov state :math:`2` (war) with initial
 government assets :math:`- 10`, so that the government starts the
 war in debt and :math:`b_2 = -10`.
+
+Zejin's edits: We provide more examples of tax-smoothing models with both complete and incomplete markets in the :ref:`Appendix <smoothing_appendix>`. 
 
 
 
@@ -1218,82 +1290,23 @@ models in which the government recognizes that it can manipulate  Arrow securiti
 In :doc:`optimal taxation with incomplete markets <amss>`, we study an **incomplete-markets** model in which the government  manipulates asset prices.
 
 
-New Examples
-==========================
-
-Here we bring in some new examples, as well as new code for solving for ex-post gross return and cumulative return on the portfolio of government assets.
-
-Ex-Post Gross Return and Cumulative Return
-------------------------------------------
-
-Recall our formula for one period Arrow securities prices:
-
-.. math::
-    q(s_{t+1} = \bar s_j | s_t = \bar s_i ) = \beta P_{i,j}
-
-Also, recall that in the complete markets setup, we computed optimal levels
-for 
-
-.. math::
-    b_{t+1}(s_{t+1} = \bar s_j | s_t = s_i ) = b(\bar s_j) ,
-
-which please note is independent of :math:`i` but depends on :math:`j`
-
-At time :math:`t` in state :math:`s_t = \bar s_i`, the value of government assets (in the tax-smoothing version of the model) is
-
-.. math::
-    \beta \sum_{j=1}^N P_{i,j} b(\bar s_j)
-
-and the ex post one-period gross return from :math:`t` to :math:`t+1` on the portfolio of government assets in state :math:`\bar s_j` at time :math:`t+1` is
-
-.. math::
-    R(\bar s_j | \bar s_i) = \frac{b(\bar s_j) }{ \beta \sum_{j'=1}^N P_{i,j} b(\bar s_{j'}) }
+Zejin's edits: the whole section below:
 
 
-The cumulative return earned from putting :math:`1` unit on time :math:`t` goods into the market portfolio of government bonds is
+Appendix
+========
 
-.. math::
-    R^T(s_{t+T}, s_{t+T-1}, \ldots, s_t) \equiv R(s_{t+1} | s_t) R (s_{t+2} | s_{t+1} )
-    \cdots R(s_{t+T} | s_{t+T-1} )
+.. _smoothing_appendix:
 
-.. code-block:: python3
+Here we give more examples of tax-smoothing models with both complete and incomplete markets. These examples differ in how states are jumping between peace and war. We will see that government chooses optimal tax collections and insurances (or debts) in each state in a way we discussed above.
 
-    def ex_post_gross_return(b, cp):
-        """
-        calculate the ex post one-period gross return on the portfolio
-        of government assets, given b and Q.
-        """
-        Q = cp.β * cp.P
-
-        values = Q @ b
-
-        n = len(b)
-        R = np.zeros((n, n))
-
-        for i in range(n):
-            ind = cp.P[i, :] != 0
-            R[i, ind] = b[ind] / values[i]
-
-        return R
-
-    def cumulative_return(s_path, R):
-        """
-        compute cumulative return from holding 1 unit market portfolio
-        of government bonds, given some simulated state path.
-        """
-        T = len(s_path)
-
-        RT_path = np.empty(T)
-        RT_path[0] = 1
-        RT_path[1:] = np.cumprod([R[s_path[t], s_path[t+1]] for t in range(T-1)])
-
-        return RT_path
+To wrap the procedure of solving models, relabeling, and displaying the results, we define a new class below.
 
 .. code-block:: python3
 
     class TaxSmoothingExample:
         """
-        construct a tax smoothing example, by relabeling consumption problem class.
+        construct a tax-smoothing example, by relabeling consumption problem class.
         """
         def __init__(self, g, P, b0, states, init=0, β=.96,
                      N_simul=150, random_state=None):
@@ -1366,7 +1379,7 @@ The cumulative return earned from putting :math:`1` unit on time :math:`t` goods
             print(f"Govt debt in {len(self.states)} states = {-self.b}")
 
             print("")
-            print(f"Government tax collections plus asset levels in {', '.join(self.states)}")
+            print(f"Government tax collections minus debt levels in {', '.join(self.states)}")
             for i in range(len(self.states)):
                 TB = self.T_bar + self.b[i]
                 print(f"  T+b in {self.states[i]} = {TB}")
@@ -1426,9 +1439,7 @@ This example is designed to emulate the Civil War and WWI
         0           & 0        & 1
     \end{bmatrix}
 
-where the government expenditure vector  :math:`g = \begin{bmatrix} g_L & g_H & g_M \end{bmatrix}` where :math:`g_L < g_M < g_H`.  Please assume :math:`b_0 = 0` and assume that the initial Markov state is state :math:`1` so that the system starts off in peace.
-
-Please apply the code for both the complete and the incomplete markets tax-smoothing models and plot the outcomes.
+where the government expenditure vector  :math:`g = \begin{bmatrix} g_L & g_H & g_M \end{bmatrix}` where :math:`g_L < g_M < g_H`.  Set :math:`b_0 = 1` and assume that the initial Markov state is state :math:`1` so that the system starts off in peace.
 
 .. code-block:: python3
 
@@ -1436,7 +1447,7 @@ Please apply the code for both the complete and the incomplete markets tax-smoot
     P_ex1 = np.array([[1-λ, λ,  0],
                       [0, 1-ϕ,  ϕ],
                       [0,   0,  1]])
-    b0_ex1 = 1. # set b0 = 1
+    b0_ex1 = 1
     states_ex1 = ['peace', 'war', 'postwar']
 
 .. code-block:: python3
@@ -1459,9 +1470,7 @@ Here set
         \phi & 0        & 1-\phi
     \end{bmatrix}
                        
-where the government expenditure vector :math:`g = \begin{bmatrix} g_L & g_L & g_H \end{bmatrix}` where :math:`g_L < g_H`. Please assume :math:`b_0 = 0` and assume that the initial Markov state is state :math:`2` so that the system starts off in a temporary peace.  
-
-Please apply the code for both the complete and the incomplete markets tax-smoothing models and plot the outcomes. 
+where the government expenditure vector :math:`g = \begin{bmatrix} g_L & g_L & g_H \end{bmatrix}` where :math:`g_L < g_H`. Assume :math:`b_0 = 1` and assume that the initial Markov state is state :math:`2` so that the system starts off in a temporary peace.
 
 .. code-block:: python3
 
@@ -1469,7 +1478,7 @@ Please apply the code for both the complete and the incomplete markets tax-smoot
     P_ex2 = np.array([[1,   0,    0],
                       [0, 1-γ,    γ],
                       [ϕ,   0, 1-ϕ]])
-    b0_ex2 = 1.
+    b0_ex2 = 1
     states_ex2 = ['peace', 'temporary peace', 'war']
 
 .. code-block:: python3
@@ -1493,7 +1502,7 @@ Markov chain:
                           
 with government expenditure levels for the four states being
 :math:`\begin{bmatrix} g_L & g_L & g_H & g_H \end{bmatrix}` where :math:`g_L < g_H`.
-Please start with :math:`b_0 = 0` and :math:`s_0 = \bar s_1`. 
+Please start with :math:`b_0 = 1` and :math:`s_0 = \bar s_1`. 
 
 .. code-block:: python3
 
@@ -1502,7 +1511,7 @@ Please start with :math:`b_0 = 0` and :math:`s_0 = \bar s_1`.
 	                  [0,  1-ϕ,   ϕ,     0],
 	                  [0,    0,  1-ψ,    ψ],
 	                  [θ,    0,    0,  1-θ ]])
-	b0_ex3 = 1.
+	b0_ex3 = 1
 	states_ex3 = ['peace1', 'peace2', 'war1', 'war2']
 
 .. code-block:: python3
@@ -1528,7 +1537,7 @@ Markov chain:
                           
 with government expenditure levels for the five states being
 :math:`\begin{bmatrix} g_L & g_L & g_H & g_H & g_L \end{bmatrix}` where :math:`g_L < g_H`.
-Please start with :math:`b_0 = 0` and :math:`s_0 = \bar s_1`.
+Assume that :math:`b_0 = 1` and :math:`s_0 = \bar s_1`.
 
 .. code-block:: python3
 
@@ -1538,8 +1547,8 @@ Please start with :math:`b_0 = 0` and :math:`s_0 = \bar s_1`.
 	                  [0,    0,  1-ψ,    ψ,    0],
 	                  [0,    0,    0,   1-θ,   θ],
 	                  [0,    0,    0,     0,   1]])
-	b0_ex4 = 1.
-	states_ex4 = ['peace1', 'peace2', 'war1', 'war2', 'forever peace']
+	b0_ex4 = 1
+	states_ex4 = ['peace1', 'peace2', 'war1', 'war2', 'permanent peace']
 
 .. code-block:: python3
 
@@ -1548,6 +1557,8 @@ Please start with :math:`b_0 = 0` and :math:`s_0 = \bar s_1`.
 
 Example 5
 ---------
+
+Zejin's edits: The last example capture the case that the world goes through a deterministic path from peace to war, and back to peace again. Since there is no randomness, the outcomes in complete markets setting should be the same as the ones in incomplete markets setting.
 
 Markov chain:
 
@@ -1565,7 +1576,7 @@ Markov chain:
                           
 with government expenditure levels for the seven states being
 :math:`\begin{bmatrix} g_L & g_L & g_H & g_H &  g_H & g_H & g_L \end{bmatrix}` where
-:math:`g_L < g_H`. Please start with :math:`b_0 = 0` and :math:`s_0 = \bar s_1`.
+:math:`g_L < g_H`. Assume :math:`b_0 = 1` and :math:`s_0 = \bar s_1`.
 
 .. code-block:: python3
 
@@ -1577,8 +1588,8 @@ with government expenditure levels for the seven states being
 	                  [0, 0, 0, 0, 0, 1, 0],
 	                  [0, 0, 0, 0, 0, 0, 1],
 	                  [0, 0, 0, 0, 0, 0, 1]])
-	b0_ex5 = 1.
-	states_ex5 = ['peace1', 'peace2', 'war1', 'war2', 'war3', 'forever peace']
+	b0_ex5 = 1
+	states_ex5 = ['peace1', 'peace2', 'war1', 'war2', 'war3', 'permanent peace']
 
 .. code-block:: python3
 
