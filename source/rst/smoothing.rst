@@ -409,7 +409,7 @@ Code
 
 Here's some code that, among other things, contains a function called `consumption_complete()`.
 
-This function computes :math:`\{ b(\bar s_i) \}_{i=1}^{N}, \bar c` as outcomes given a set of parameters for the general case with :math:`N` Markov states"
+This function computes :math:`\{ b(\bar s_i) \}_{i=1}^{N}, \bar c` as outcomes given a set of parameters for the general case with :math:`N` Markov states
 under the assumption of complete markets
 
 .. code-block:: python3
@@ -991,7 +991,7 @@ This is an example in which
 
 *  the return  on the insurance against war  is high when war breaks out or continues
 
-*  Given the history of states that  we assumed, the value of one unit of the portfolio of government assets will double in the end because of high returns during wartime.
+*  given the history of states that  we assumed, the value of one unit of the portfolio of government assets will double in the end because of high returns during wartime.
 
 *Exercise:* try changing the Markov transition matrix so that
 
@@ -1318,7 +1318,7 @@ Here we give more examples of tax-smoothing models with both complete and incomp
 
 These examples differ in how Markov states are jumping between peace and war. 
  
-To wrap the procedure of solving models, relabeling the graph so that we record government *debt* rather than *assets**,
+To wrap the procedure of solving models, relabeling the graph so that we record government *debt* rather than *assets*,
 and displaying the results, we define a new class below.
 
 .. code-block:: python3
