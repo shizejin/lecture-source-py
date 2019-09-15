@@ -442,6 +442,20 @@ under the assumption of complete markets
             self.P = np.asarray(P)
             self.init = init
 
+        def simulate(self, N_simul=150, random_state=1):
+            """
+            Parameters
+            ----------
+
+            N_simul : number of periods for simulation
+            random_state : random state for simulating Markov chain
+            """
+            # For the simulation define a quantecon MC class
+            mc = qe.MarkovChain(self.P)
+            s_path = mc.simulate(N_simul, init=self.init, random_state=random_state)
+
+            return s_path
+
 
     def consumption_complete(cp):
         """
@@ -489,7 +503,7 @@ under the assumption of complete markets
         return c_bar, b
 
 
-    def consumption_incomplete(cp, N_simul=150, random_state=None):
+    def consumption_incomplete(cp, s_path):
         """
         Computes endogenous values for the incomplete market case.
 
@@ -497,20 +511,16 @@ under the assumption of complete markets
         ----------
 
         cp : instance of ConsumptionProblem
-        N_simul : int
-        random_state : random state for simulating Markov chain
+        s_path : the path of states
         """
-        β, P, y, b0, init = cp.β, cp.P, cp.y, cp.b0, cp.init  # Unpack
-        # For the simulation define a quantecon MC class
-        mc = qe.MarkovChain(P)
+        β, P, y, b0 = cp.β, cp.P, cp.y, cp.b0  # Unpack
+
+        N_simul = len(s_path)
 
         # Useful variables
         n = len(y)
         y.shape = (n, 1)
         v = np.linalg.inv(np.eye(n) - β * P) @ y
-
-        # Simulate state path
-        s_path = mc.simulate(N_simul, init=init, random_state=random_state)
 
         # Store consumption and debt path
         b_path, c_path = np.ones(N_simul+1), np.ones(N_simul)
@@ -523,7 +533,7 @@ under the assumption of complete markets
             c_path[i] = (1 - β) * (v - b_path[i] * np.ones((n, 1)))[s, 0]
             b_path[i + 1] = b_path[i] + db[s, 0]
 
-        return c_path, b_path[:-1], y[s_path], s_path
+        return c_path, b_path[:-1], y[s_path]
 
 
 Let's test by checking that :math:`\bar c` and :math:`b_2` satisfy the budget constraint
@@ -706,13 +716,13 @@ Let's try this, using the same parameters in both complete and incomplete market
 
 .. code-block:: python3
 
-    N_simul = 150
     cp = ConsumptionProblem()
+    s_path = cp.simulate()
+    N_simul = len(s_path)
 
     c_bar, debt_complete = consumption_complete(cp)
 
-    c_path, debt_path, y_path, s_path = consumption_incomplete(cp, N_simul=N_simul,
-                                                               random_state=1)
+    c_path, debt_path, y_path = consumption_incomplete(cp, s_path)
 
     fig, ax = plt.subplots(1, 2, figsize=(15, 5))
 
@@ -899,9 +909,9 @@ Here's our code to compute a quantitative example  intialized to have government
 .. code-block:: python3
 
     # Parameters
-
     β = .96
-    #  change notation y to g in the tax-smoothing example
+
+    # change notation y to g in the tax-smoothing example
     g = [1, 2]
     b0 = 1
     P = np.array([[.8, .2],
@@ -961,7 +971,7 @@ Here's our code to compute a quantitative example  intialized to have government
     print(f"Ex-ante returns to purchase of Arrow securities \n {exant}")
 
     print("")
-    print("The Ex-post one-period gross return on the portfolio of government assets")  
+    print("The Ex-post one-period gross return on the portfolio of government assets")
     print(R)
 
     print("")
@@ -1327,32 +1337,30 @@ and displaying the results, we define a new class below.
         """
         construct a tax-smoothing example, by relabeling consumption problem class.
         """
-        def __init__(self, g, P, b0, states, init=0, β=.96,
-                     N_simul=150, random_state=None):
+        def __init__(self, g, P, b0, states, β=.96,
+                     init=0, s_path=None, N_simul=150, random_state=1):
 
             self.states = states # state names
-            self.cp = ConsumptionProblem(β, g, b0, P, init=init)
+
+            # if the path of states is not specified
+            if s_path is None:
+                self.cp = ConsumptionProblem(β, g, b0, P, init=init)
+                self.s_path = self.cp.simulate(N_simul=N_simul, random_state=random_state)
+            # if the path of states is specified
+            else:
+                self.cp = ConsumptionProblem(β, g, b0, P, init=s_path[0])
+                self.s_path = s_path
 
             # solve for complete market case
             self.T_bar, self.b = consumption_complete(self.cp)
 
             # solve for incomplete market case
-            self.T_path, self.asset_path, self.g_path, self.s_path = \
-                consumption_incomplete(self.cp, N_simul=N_simul,
-                                       random_state=random_state)
+            self.T_path, self.asset_path, self.g_path = \
+                consumption_incomplete(self.cp, self.s_path)
 
-            # calculate ex post gross return on government portfolio
+            # calculate returns on state-contingent debt
             self.R = ex_post_gross_return(self.b, self.cp)
-
-        def cumulative_return(self, s_path=None):
-
-            if s_path is None:
-                # if s_path not given, use the path in the incomplete market case
-                s_path = self.s_path
-
-            RT_path = cumulative_return(s_path, self.R)
-
-            return RT_path
+            self.RT_path = cumulative_return(self.s_path, self.R)
 
         def display(self):
 
@@ -1360,7 +1368,6 @@ and displaying the results, we define a new class below.
             fig, ax = plt.subplots(1, 3, figsize=(15, 5))
 
             N = len(self.T_path)
-            RT_path = self.cumulative_return()
 
             ax[0].set_title('Tax collection paths')
             ax[0].plot(np.arange(N), self.T_path, label='incomplete market')
@@ -1378,7 +1385,7 @@ and displaying the results, we define a new class below.
             ax[1].set_xlabel('Periods')
 
             ax[2].set_title('Cumulative return path (complete market)')
-            ax[2].plot(np.arange(N), RT_path, color='b')
+            ax[2].plot(np.arange(N), self.RT_path, color='b')
             ax[2].set_xlabel('Periods')
             ax[2].set_ylabel('Cumulative return', color='b')
 
@@ -1423,12 +1430,12 @@ and displaying the results, we define a new class below.
             print(f"Ex-ante returns to purchase of Arrow securities = {exant}")
 
             print("")
-            print("The Ex-post one-period gross return on the portfolio of government assets")  
+            print("The Ex-post one-period gross return on the portfolio of government assets")
             print(self.R)
 
             print("")
             print("The cumulative return earned from holding 1 unit market portfolio of government bonds")
-            print(RT_path[-1])
+            print(self.RT_path[-1])
 
 Parameters
 ----------
@@ -1483,6 +1490,14 @@ that exceeds its prewar level.
 
     ts_ex1 = TaxSmoothingExample(g_ex1, P_ex1, b0_ex1, states_ex1, random_state=1)
     ts_ex1.display()
+
+.. code-block:: python3
+
+    # The following shows the use of the wrapper class when a specific state path is given
+    # (for Tom)
+    s_path = [0, 0, 1, 1, 2]
+    ts_s_path = TaxSmoothingExample(g_ex1, P_ex1, b0_ex1, states_ex1, s_path=s_path)
+    ts_s_path.display()
 
 Example 2
 ---------
