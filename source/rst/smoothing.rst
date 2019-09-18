@@ -15,7 +15,7 @@ Consumption and Tax Smoothing with Complete and Incomplete Markets
 
 .. contents:: :depth: 2
 
-In addition to what's in Anaconda, this lecture will need the  library:
+In addition to what's in Anaconda, this lecture uses the  library:
 
 .. code-block:: ipython
   :class: hide-output
@@ -64,9 +64,9 @@ versions of these models.
 
 But for each version of a consumption-smoothing model, there is a tax-smoothing counterpart obtained simply by
 
-*  relabeling consumption as tax collections 
+*  relabeling consumption as tax collections
 
-*  relabeling a consumer's  nonfinancial income as a government's purchases 
+*  relabeling a consumer's  nonfinancial income as a government's purchases
 
 *  relabeling a consumer's *debt* as a government's *assets*
 
@@ -147,14 +147,15 @@ Finite State Markov Income Process
 ----------------------------------
 
 
-In each version of the consumption-smoothing model, nonfinancial income is governed by a two-state Markov chain (it's easy to generalize this to an :math:`N` state Markov chain).
+In each version of the consumption-smoothing model, nonfinancial income is governed by a two-state Markov chain
+(it's easy to generalize this to an :math:`N` state Markov chain).
 
-In particular, the *state of the world* is given by :math:`s_t` that follows
+In particular, the *state of the world* is given by :math:`s_t \in \{1, 2\}` that follows
 a Markov chain with transition probability matrix
 
 .. math::
 
-    P_{ij} = \mathbb P \{s_{t+1} = \bar s_j \,|\, s_t = \bar s_i \}
+    P_{ij} = \mathbb P \{s_{t+1} = j \,|\, s_t = i \}
 
 
 where :math:`\mathbb P` means conditional probability
@@ -165,8 +166,8 @@ Nonfinancial income :math:`\{y_t\}` obeys
 
     y_t =
     \begin{cases}
-        \bar y_1 & \quad \text{if } s_t = \bar s_1 \\
-        \bar y_2 & \quad \text{if } s_t = \bar s_2
+        \bar y_1 & \quad \text{if } s_t = 1 \\
+        \bar y_2 & \quad \text{if } s_t = 2
     \end{cases}
 
 
@@ -193,7 +194,7 @@ Remark About Isomorphism
 We can regard these as tax-smoothing models if we set
 :math:`c_t = T_t` and :math:`G_t = y_t`, where :math:`T_t` is total tax
 collections and :math:`\{G_t\}` is an exogenous government expenditures
-process.  
+process.
 
 As mentioned earlier, for much of this lecture we shall focus on the consumption-smoothing interpretation of our models.
 
@@ -243,11 +244,11 @@ state :math:`s_t` is
 
     c_t + b_t
     \leq y(s_t) +
-    \sum_j  q(\bar s_j \,|\, s_t ) \, b_{t+1}(\bar s_j \,|\, s_t)
+    \sum_j  q(j \,|\, s_t ) \, b_{t+1}( j \,|\, s_t)
 
 
-where :math:`b_t` is the consumer's one-period debt that falls due at time :math:`t` and  :math:`b_{t+1}(\bar s_j\,|\, s_t)` are the consumer's time
-:math:`t` sales of the  time :math:`t+1` consumption good in Markov state :math:`\bar s_j`, a source of time :math:`t` revenues.
+where :math:`b_t` is the consumer's one-period debt that falls due at time :math:`t` and  :math:`b_{t+1}(j\,|\, s_t)` are the consumer's time
+:math:`t` sales of the  time :math:`t+1` consumption good in Markov state :math:`j`, a source of time :math:`t` revenues.
 
 A natural analog of Hall's assumption that the one-period risk-free gross
 interest rate is :math:`\beta^{-1}` is
@@ -255,17 +256,17 @@ interest rate is :math:`\beta^{-1}` is
 .. math::
     :label: cs_2
 
-    q(\bar s_j \,|\, \bar s_i) = \beta P_{ij}
+    q(j \,|\, i) = \beta P_{ij}
 
 
-To understand this, observe that in state :math:`\bar s_i` it costs :math:`\sum_j q(\bar s_j \,|\, \bar s_i)`  to purchase one unit of consumption next period *for sure*, i.e., meaning no matter what state of the world  occurs at :math:`t+1`.
+To understand this, observe that in state :math:`i` it costs :math:`\sum_j q(j \,|\, i)`  to purchase one unit of consumption next period *for sure*, i.e., meaning no matter what state of the world  occurs at :math:`t+1`.
 
 Hence the implied price of a risk-free claim on one unit of consumption next
 period is
 
 .. math::
 
-    \sum_j q(\bar s_j \,|\, \bar s_i) =  \sum_j \beta P_{ij} =  \beta
+    \sum_j q(j \,|\, i) =  \sum_j \beta P_{ij} =  \beta
 
 
 This confirms the sense in which  :eq:`cs_2` is a natural counterpart to Hall's assumption about the
@@ -287,8 +288,8 @@ or, under our assumption :eq:`cs_2` about the values taken by  Arrow security pr
     c_{t+1} = c_t
 
 
-Thus, our consumer sets :math:`c_t = \bar c` for all :math:`t \geq 0` for some value :math:`\bar c` that it is our job now to determine along with 
-values for :math:`b_{t+1}(\bar s_j | s_t = \bar s_i)` for :math:`i=1,2` and :math:`j = 1,2`
+Thus, our consumer sets :math:`c_t = \bar c` for all :math:`t \geq 0` for some value :math:`\bar c` that it is our job now to determine along with
+values for :math:`b_{t+1}(j | s_t = i)` for :math:`i=1,2` and :math:`j = 1,2`
 
 We'll use a *guess and verify* method
 
@@ -297,7 +298,7 @@ We'll use a *guess and verify* method
 .. math::
     :label: eq_guess
 
-    b_{t+1}(s_{t+1} = \bar s_j \,|\, s_t = \bar s_i) = b(\bar s_j) ,
+    b_{t+1}(s_{t+1} = j \,|\, s_t = i) = b(j) ,
             \quad i=1,2; \;\; j= 1,2
 
 
@@ -311,8 +312,8 @@ For :math:`t \geq 1`, these imply
     :label: cs_4a
 
     \begin{aligned}
-        \bar c + b(\bar s_1) & = y(\bar s_1) + q(\bar s_1\,|\, \bar s_1) b(\bar s_1) + q(\bar s_2 \,|\, \bar s_1)  b(\bar s_2) \cr
-        \bar c + b(\bar s_2) & = y(\bar s_2) + q(\bar s_1\,|\, \bar s_2) b(\bar s_1) + q(\bar s_2 \,|\, \bar s_2) b(\bar s_2)
+        \bar c + b(1) & = y(1) + q(1\,|\, 1) b(1) + q(2 \,|\, 1)  b(2) \cr
+        \bar c + b(2) & = y(2) + q(1\,|\, 2) b(1) + q(2 \,|\, 2) b(2)
     \end{aligned}
 
 
@@ -321,38 +322,38 @@ or
 .. math::
 
     \begin{bmatrix}
-       b(\bar s_1) \cr b(\bar s_2)
+       b(1) \cr b(2)
     \end{bmatrix} +
     \begin{bmatrix}
     \bar c \cr \bar c
     \end{bmatrix} =
     \begin{bmatrix}
-        y(\bar s_1) \cr y(\bar s_2)
+        y(1) \cr y(2)
     \end{bmatrix} +
     \beta
     \begin{bmatrix}
         P_{11} & P_{12} \cr P_{21} & P_{22}
     \end{bmatrix}
     \begin{bmatrix}
-        b(\bar s_1) \cr b(\bar s_2)
+        b(1) \cr b(2)
     \end{bmatrix}
 
 
 These are :math:`2` equations in the :math:`3` unknowns
-:math:`\bar c, b(\bar s_1), b(\bar s_2)`.
+:math:`\bar c, b(1), b(2)`.
 
 To get a third equation, we assume that at time :math:`t=0`, :math:`b_0`
 is the debt due; and we assume that at time :math:`t=0`, the Markov
-state is :math:`\bar s_1`.
+state is :math:`1`.
 
-(We could instead have assumed that at time :math:`t=0` the Markov state :math:`s_0 = \bar s_2`)
+(We could instead have assumed that at time :math:`t=0` the Markov state :math:`s_0 = 2`)
 
-Since weh have  assumed that :math:`s_0 = \bar s_1`,  the budget constraint at time :math:`t=0` is
+Since weh have  assumed that :math:`s_0 = 1`,  the budget constraint at time :math:`t=0` is
 
 .. math::
     :label: cs_5
 
-    \bar c + b_0 = y(\bar s_1) + q(\bar s_1 \,|\, \bar s_1) b(\bar s_1) + q(\bar s_2\,|\,\bar s_1) b(\bar s_2)
+    \bar c + b_0 = y(1) + q(1 \,|\, 1) b(1) + q(2\,|\,1) b(2)
 
 
 If we substitute  :eq:`cs_5` into the first equation of :eq:`cs_4a` and rearrange, we
@@ -361,7 +362,7 @@ discover that
 .. math::
     :label: cs_6
 
-    b(\bar s_1) = b_0
+    b(1) = b_0
 
 
 We can then use the second equation of :eq:`cs_4a`  to deduce the restriction
@@ -369,13 +370,13 @@ We can then use the second equation of :eq:`cs_4a`  to deduce the restriction
 .. math::
     :label: cs_7
 
-    y(\bar s_1) - y(\bar s_2) + [q(\bar s_1\,|\, \bar s_1) - q(\bar s_1\,|\, \bar s_2) - 1 ] b_0 +
-    [q(\bar s_2\,|\,\bar s_1) + 1 - q(\bar s_2 \,|\, \bar s_2) ] b(\bar s_2) = 0 ,
+    y(1) - y(2) + [q(1\,|\, 1) - q(1\,|\, 2) - 1 ] b_0 +
+    [q(2\,|\,1) + 1 - q(2 \,|\, 2) ] b(2) = 0 ,
 
 
-an equation that we can solve for the unknown :math:`b(\bar s_2)`.
+an equation that we can solve for the unknown :math:`b(2)`.
 
-Knowing :math:`b(\bar s_1)` and :math:`b(\bar s_2)`, we can solve equation :eq:`cs_5`  for the constant level of consumption :math:`\bar c`.
+Knowing :math:`b(1)` and :math:`b(2)`, we can solve equation :eq:`cs_5`  for the constant level of consumption :math:`\bar c`.
 
 Key Outcomes
 ------------
@@ -386,7 +387,7 @@ of our model, we obtain the following striking results:
 *  The consumer chooses to make consumption perfectly constant across
    time and Markov states.
 
-* State-contingent debt purchases :math:`b_{t+1}(s_{t+1} = \bar s_j | s_t = \bar s_i)` depend only on :math:`\bar s_j`
+* State-contingent debt purchases :math:`b_{t+1}(s_{t+1} = j | s_t = i)` depend only on :math:`j`
 
 
 We computed the constant level of consumption :math:`\bar c` and indicated how that level depends on the underlying specifications of preferences, Arrow securities prices,  the stochastic process of exogenous nonfinancial income, and the initial debt level :math:`b_0`
@@ -409,7 +410,7 @@ Code
 
 Here's some code that, among other things, contains a function called `consumption_complete()`.
 
-This function computes :math:`\{ b(\bar s_i) \}_{i=1}^{N}, \bar c` as outcomes given a set of parameters for the general case with :math:`N` Markov states
+This function computes :math:`\{ b(i) \}_{i=1}^{N}, \bar c` as outcomes given a set of parameters for the general case with :math:`N` Markov states
 under the assumption of complete markets
 
 .. code-block:: python3
@@ -550,7 +551,10 @@ Let's test by checking that :math:`\bar c` and :math:`b_2` satisfy the budget co
 
 Below, we'll take the outcomes produced by this code -- in particular the implied
 consumption and debt paths -- and compare them with outcomes
-from an incomplete markets model in the spirit of Hall :cite:`Hall1978` and Barro :cite:`Barro1979` (and also, for those who love history, Gallatin (1807) :cite:`Gallatin`).
+from an incomplete markets model in the spirit of Hall :cite:`Hall1978` and Barro :cite:`Barro1979`
+
+
+   * For those who love history, President Jefferson's Secretary of Treasury Albert Gallatin (1807) :cite:`Gallatin` advocated what amounts to Barro's model
 
 
 
@@ -635,7 +639,7 @@ Define
     v_t := \mathbb E_t \sum_{j=0}^\infty \beta^j y_{t+j}
 
 
-In our two-state Markov chain setting, :math:`v_t = v(1)` when :math:`s_t= \bar s_1` and :math:`v_t = v(2)` when :math:`s_t=\bar s_2`.
+In our two-state Markov chain setting, :math:`v_t = v(1)` when :math:`s_t= 1` and :math:`v_t = v(2)` when :math:`s_t=2`.
 
 Therefore, we can write
 
@@ -825,16 +829,16 @@ where
 
 
 is the price of one unit of goods when tomorrow's Markov  state is  :math:`j` and when
-today's Markov state is :math:`i` 
+today's Markov state is :math:`i`
 
 :math:`b_i` is the quantity of the government's
 level of *assets* in Markov state :math:`i`.
 
-That is, :math:`b_i` equals  one-period state-contingent claims owed to the government that fall due at time :math:`t`. 
+That is, :math:`b_i` equals  one-period state-contingent claims owed to the government that fall due at time :math:`t`.
 
 Thus, if :math:`b_i < 0`, it means the government **owes** :math:`-b_i` to the private sector when the economy arrives in Markov state :math:`i`.
 
-In our examples below, this  happens when in a previous war-time  period the government has sold an Arrow securities paying off :math:`- b_i` 
+In our examples below, this  happens when in a previous war-time  period the government has sold an Arrow securities paying off :math:`- b_i`
 in peacetime Markov state :math:`i`
 
 
@@ -845,20 +849,20 @@ The *ex post* one-period gross return on the portfolio of government assets  hel
 to state :math:`j` at time :math:`t+1`  is
 
 .. math::
-    R(\bar s_j | \bar s_i) = \frac{b(\bar s_j) }{ \sum_{j'=1}^N Q_{ij} b(\bar s_{j'}) }
+    R(j | i) = \frac{b(j) }{ \sum_{j'=1}^N Q_{ij} b(j') }
 
-where :math:`\sum_{j'=1}^N Q_{ij} b(\bar s_{j'})` is the total government expenditure on one-period state-contingent claims in state :math:`\bar s_i` at time :math:`t`.
+where :math:`\sum_{j'=1}^N Q_{ij} b(j')` is the total government expenditure on one-period state-contingent claims in state :math:`i` at time :math:`t`.
 
-The cumulative return earned from putting :math:`1` unit of time :math:`t` goods into the government portfolio of state-contingent securities at 
-time :math:`t` and then rolling over the proceeds into the government portfolio each period thereafter is 
+The cumulative return earned from putting :math:`1` unit of time :math:`t` goods into the government portfolio of state-contingent securities at
+time :math:`t` and then rolling over the proceeds into the government portfolio each period thereafter is
 
 .. math::
     R^T(s_{t+T}, s_{t+T-1}, \ldots, s_t) \equiv R(s_{t+1} | s_t) R (s_{t+2} | s_{t+1} )
     \cdots R(s_{t+T} | s_{t+T-1} )
 
-Below we define two functions that calculate these return rates. 
+Below we define two functions that calculate these return rates.
 
-**Convention:**  When :math:`P_{ij}=0`,  we arbitrarily set :math:`R(\bar s_j | \bar s_i)` to be :math:`0`.   
+**Convention:**  When :math:`P_{ij}=0`,  we arbitrarily set :math:`R(j | i)` to be :math:`0`.
 
 
 
@@ -895,9 +899,9 @@ Below we define two functions that calculate these return rates.
 
         return RT_path
 
-As above, we'll assume that the initial Markov state is state :math:`1`, which means we start from a state of peace. 
+As above, we'll assume that the initial Markov state is state :math:`1`, which means we start from a state of peace.
 
-The government  then experiences 3 time periods of war and come back to peace again. 
+The government  then experiences 3 time periods of war and come back to peace again.
 
 The history of states is therefore :math:`\{ peace, war, war, war, peace \}`.
 
@@ -991,9 +995,9 @@ time (Markov state :math:`2`).
 We recommend plugging the quantities computed above into the government
 budget constraints in the two Markov states and staring.
 
-This is an example in which 
+This is an example in which
 
-*  during peacetime, the government purchases *insurance* against the possibility that war breaks out next period 
+*  during peacetime, the government purchases *insurance* against the possibility that war breaks out next period
 
 *  during wartime, the government purchases *insurance* against the possibility that war continues another period
 
@@ -1017,7 +1021,7 @@ Also, start the system in Markov state :math:`2` (war) with initial
 government assets :math:`- 10`, so that the government starts the
 war in debt and :math:`b_2 = -10`.
 
-We provide further examples of tax-smoothing models with a finite Markov state in the :ref:`Appendix <smoothing_appendix>`. 
+We provide further examples of tax-smoothing models with a finite Markov state in the :ref:`Appendix <smoothing_appendix>`.
 
 
 
@@ -1081,14 +1085,14 @@ constraints
     c_t + b_t = y_t + \beta \mathbb E_t b_{t+1}, \quad t \geq 0
 
 
-Please note that 
+Please note that
 
-.. math:: 
+.. math::
 
-    E_t b_{t+1} = \int p_{t+1}(x_{t+1} | x_t) b_{t+1}(x_{t+1}) d x_{t+1}  
+    E_t b_{t+1} = \int p_{t+1}(x_{t+1} | x_t) b_{t+1}(x_{t+1}) d x_{t+1}
 
 which verifies that :math:`E_t b_{t+1}` is the value of time :math:`t+1` state-contingent claims issued by the consumer at time :math:`t`
-    
+
 
 We can solve the time :math:`t` budget constraint forward to obtain
 
@@ -1267,14 +1271,14 @@ constraints
     T_t + b_t = g_t + \beta \mathbb E_t b_{t+1}, \quad t \geq 0
 
 where :math:`T_t` is tax revenues, :math:`b_t` are receipts at :math:`t` from contingent claims that the government had *purchased* at time :math:`t`,
-and 
+and
 
-.. math:: 
+.. math::
 
-    \mathbb E_t b_{t+1} \equiv \int p_{t+1}(x_{t+1} | x_t) b_{t+1}(x_{t+1}) d x_{t+1}  
+    \mathbb E_t b_{t+1} \equiv \int p_{t+1}(x_{t+1} | x_t) b_{t+1}(x_{t+1}) d x_{t+1}
 
 is the value of time :math:`t+1` state-contingent claims purchased  by the government  at time :math:`t`
-    
+
 
 As above with the consumption-smoothing model, we can solve the time :math:`t` budget constraint forward to obtain
 
@@ -1285,12 +1289,12 @@ As above with the consumption-smoothing model, we can solve the time :math:`t` b
 which can be rearranged to become
 
 .. math::
- 
-    \mathbb E_t  \sum_{j=0}^\infty \beta^j g_{t+j}  = b_t + \sum_{j=0}^\infty \beta^j T_{t+j} 
 
-which states that the present value of government purchases equals the value of government assets at :math:`t` plus the present value tax receipts   
-    
-   
+    \mathbb E_t  \sum_{j=0}^\infty \beta^j g_{t+j}  = b_t + \sum_{j=0}^\infty \beta^j T_{t+j}
+
+which states that the present value of government purchases equals the value of government assets at :math:`t` plus the present value tax receipts
+
+
 
 
 
@@ -1326,8 +1330,8 @@ Appendix with More Finite Markov Chain Tax-Smoothing Examples
 
 Here we give more examples of tax-smoothing models with both complete and incomplete markets in an :math:`N` state Markov setting.
 
-These examples differ in how Markov states are jumping between peace and war. 
- 
+These examples differ in how Markov states are jumping between peace and war.
+
 To wrap the procedure of solving models, relabeling the graph so that we record government *debt* rather than *assets*,
 and displaying the results, we define a new class below.
 
@@ -1458,9 +1462,9 @@ Example 1
 This example is designed to produce some stylized versions of tax, debt, and deficit paths followed by the United States during and
 after the Civil War and also during and after World War I.
 
-We set the Markov chain to have three states 
+We set the Markov chain to have three states
 
-.. math:: 
+.. math::
     P =
     \begin{bmatrix}
         1 - \lambda & \lambda  & 0    \cr
@@ -1468,7 +1472,7 @@ We set the Markov chain to have three states
         0           & 0        & 1
     \end{bmatrix}
 
-where the government expenditure vector  :math:`g = \begin{bmatrix} g_L & g_H & g_M \end{bmatrix}` where :math:`g_L < g_M < g_H`. 
+where the government expenditure vector  :math:`g = \begin{bmatrix} g_L & g_H & g_M \end{bmatrix}` where :math:`g_L < g_M < g_H`.
 
 We set :math:`b_0 = 1` and assume that the initial Markov state is state :math:`1` so that the system starts off in peace.
 
@@ -1502,7 +1506,7 @@ that exceeds its prewar level.
 Example 2
 ---------
 
-This example captures a peace followed by a war, eventually followed by a  permanent peace .  
+This example captures a peace followed by a war, eventually followed by a  permanent peace .
 
 Here we set
 
@@ -1513,8 +1517,8 @@ Here we set
         0    & 1-\gamma & \gamma \cr
         \phi & 0        & 1-\phi
     \end{bmatrix}
-                       
-where the government expenditure vector :math:`g = \begin{bmatrix} g_L & g_L & g_H \end{bmatrix}` where :math:`g_L < g_H`. 
+
+where the government expenditure vector :math:`g = \begin{bmatrix} g_L & g_L & g_H \end{bmatrix}` where :math:`g_L < g_H`.
 
 We assume :math:`b_0 = 1` and that the initial Markov state is state :math:`2` so that the system starts off in a temporary peace.
 
@@ -1541,19 +1545,19 @@ is a war state with a positive probability of peace next period.
 The Markov chain is:
 
 .. math::
-    P = 
+    P =
     \begin{bmatrix}
    		1 - \lambda & \lambda  & 0      & 0         \cr
         0           & 1 - \phi & \phi   & 0         \cr
         0           & 0        & 1-\psi & \psi      \cr
         \theta      & 0        & 0      & 1 - \theta
     \end{bmatrix}
-                          
+
 with government expenditure levels for the four states being
 :math:`\begin{bmatrix} g_L & g_L & g_H & g_H \end{bmatrix}` where :math:`g_L < g_H`.
 
 
-We start with :math:`b_0 = 1` and :math:`s_0 = \bar s_1`. 
+We start with :math:`b_0 = 1` and :math:`s_0 = 1`.
 
 .. code-block:: python3
 
@@ -1587,11 +1591,11 @@ Here the Markov chain is:
         0           & 0        & 0      & 1 - \theta & \theta \cr
         0           & 0        & 0      & 0          & 1
     \end{bmatrix}
-                          
+
 with government expenditure levels for the five states being
 :math:`\begin{bmatrix} g_L & g_L & g_H & g_H & g_L \end{bmatrix}` where :math:`g_L < g_H`.
 
-We ssume that :math:`b_0 = 1` and :math:`s_0 = \bar s_1`.
+We ssume that :math:`b_0 = 1` and :math:`s_0 = 1`.
 
 .. code-block:: python3
 
@@ -1629,10 +1633,10 @@ The Markov chain is:
         0 & 0 & 0 & 0 & 0 & 0 & 1 \cr
         0 & 0 & 0 & 0 & 0 & 0 & 1 \cr
     \end{bmatrix}
-                          
+
 with government expenditure levels for the seven states being
 :math:`\begin{bmatrix} g_L & g_L & g_H & g_H &  g_H & g_H & g_L \end{bmatrix}` where
-:math:`g_L < g_H`. Assume :math:`b_0 = 1` and :math:`s_0 = \bar s_1`.
+:math:`g_L < g_H`. Assume :math:`b_0 = 1` and :math:`s_0 = 1`.
 
 .. code-block:: python3
 
