@@ -1357,6 +1357,7 @@ and displaying the results, we define a new class below.
 
             # solve for complete market case
             self.T_bar, self.b = consumption_complete(self.cp)
+            self.debt_value = - (β * P @ self.b).T
 
             # solve for incomplete market case
             self.T_path, self.asset_path, self.g_path = \
@@ -1384,6 +1385,7 @@ and displaying the results, we define a new class below.
             ax[1].plot(np.arange(N), -self.asset_path, label='incomplete market')
             ax[1].plot(np.arange(N), -self.b[self.s_path], label='complete market')
             ax[1].plot(np.arange(N), self.g_path, label='govt expenditures', ls='--')
+            ax[1].plot(np.arange(N), self.debt_value[self.s_path], label="today's value of debts")
             ax[1].legend()
             ax[1].axhline(0, color='k', ls='--')
             ax[1].set_xlabel('Periods')
