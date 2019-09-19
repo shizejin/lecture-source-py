@@ -849,9 +849,9 @@ The *ex post* one-period gross return on the portfolio of government assets  hel
 to state :math:`j` at time :math:`t+1`  is
 
 .. math::
-    R(j | i) = \frac{b(j) }{ \sum_{j'=1}^N Q_{ij} b(j') }
+    R(j | i) = \frac{b(j) }{ \sum_{j'=1}^N Q_{ij'} b(j') }
 
-where :math:`\sum_{j'=1}^N Q_{ij} b(j')` is the total government expenditure on one-period state-contingent claims in state :math:`i` at time :math:`t`.
+where :math:`\sum_{j'=1}^N Q_{ij'} b(j')` is the total government expenditure on one-period state-contingent claims in state :math:`i` at time :math:`t`.
 
 The cumulative return earned from putting :math:`1` unit of time :math:`t` goods into the government portfolio of state-contingent securities at
 time :math:`t` and then rolling over the proceeds into the government portfolio each period thereafter is
