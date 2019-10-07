@@ -28,7 +28,7 @@ Overview
 
 
 
-This lecture describes two types of consumption-smoothing models
+This lecture describes two types of consumption-smoothing models.
 
 * one is in the **complete markets** tradition of `Kenneth Arrow <https://en.wikipedia.org/wiki/Kenneth_Arrow>`
 
@@ -52,7 +52,7 @@ so that :math:`\beta^{-1}` is the price of one-period risk-free claim to consump
 We maintain Hall's assumption about the interest rate when we describe an
 incomplete markets version of our model.
 
-In addition, we extend Hall's assumption about the interest rate to an appropriate counterpart to create a "complete markets" model in which there are markets
+In addition, we extend Hall's assumption about the risk-free interest rate to an appropriate counterpart to create a "complete markets" model in which there are markets
 in a complete array of one-period Arrow state-contingent securities.  
 
 In this lecture we'll consider two closely related but distinct alternative assumptions about the consumer's
@@ -64,7 +64,8 @@ exogenous nonfinancial income process:
    state vector in :math:`{\mathbb R}^n` driven by a Gaussian vector IID shock
    process
 
-We'll spend most of this lecture studying the finite-state Markov specification, but will briefly treat the linear state space specification before concluding.
+We'll spend most of this lecture studying the finite-state Markov specification, but will begin by studying the linear state space specification because it
+is so closely linked to earlier lectures.
 
 Let's start with some imports:
 
@@ -81,10 +82,7 @@ Relationship to Other Lectures
 
 This lecture can be viewed as a followup to :doc:`perm_income_cons` 
 
-The key difference between that lectures and this one is
-
-* Here the consumer  takes all prices as exogenous, meaning that his decisions do not affect them.
-
+This lecture is also a prologomenon to a lecture on tax-smoothing :doc:`smoothing_tax`
 
 
 Background
@@ -111,6 +109,8 @@ payoffs depend on next period's realization of the Markov state.
 
 *  In an :math:`N` state Markov state version of the model,  :math:`N` such securities are traded each period.
 
+*  In a continuous state Markov state version of the model, a continuum of such securities are traded each period.
+
 These state-contingent securities are commonly called Arrow securities, after `Kenneth Arrow <https://en.wikipedia.org/wiki/Kenneth_Arrow>`
 
 In the **incomplete markets version** of the model, the consumer can buy and sell only one security each period, a risk-free one-period bond with gross 
@@ -118,11 +118,279 @@ one-period return :math:`\beta^{-1}`.
 
 
 
+Linear State Space Version of Complete Markets Model
+====================================================
+
+Now we'll study a complete markets model adapted to  a setting with a continuous Markov state like that in the :doc:`first lecture on the permanent income model <perm_income>`.
+
+In that model, there are
+
+* incomplete markets: the consumer can trade only a single risk-free one-period bond bearing gross one-period risk-free interest rate equal to :math:`\beta^{-1}`.
+
+* the consumer's exogenous nonfinancial income is governed by a linear state space model driven by Gaussian shocks, the kind of model studied in an earlier lecture about :doc:`linear state space models <linear_models>`.
+
+We'll write down a complete markets counterpart of that model.
+
+Suppose that nonfinancial income is governed by the state
+space system
+
+.. math::
+
+    \begin{aligned}
+         x_{t+1} & = A x_t + C w_{t+1} \cr
+         y_t & = S_y x_t
+    \end{aligned}
+
+
+where :math:`x_t` is an :math:`n \times 1` vector and :math:`w_{t+1} \sim {\cal N}(0,I)` is IID over time.
+
+We again want  a natural counterpart of the Hall assumption that the one-period risk-free
+gross interest rate is :math:`\beta^{-1}`.
+
+Accordingly,  we assume that  the scaled prices
+of one-period ahead Arrow securities are
+
+.. math::
+    :label: cs_14
+
+    q_{t+1}(x_{t+1} \,|\, x_t) = \beta \phi(x_{t+1} \,|\, A x_t, CC')
+
+
+where :math:`\phi(\cdot \,|\, \mu, \Sigma)` is a multivariate Gaussian
+distribution with mean vector :math:`\mu` and covariance matrix
+:math:`\Sigma`.
+
+With the **pricing kernel** :math:`q_{t+1}(x_{t+1} \,|\, x_t)` in hand, we can price claims to consumption at time :math:`t+1` consumption that pay off when
+:math:`x_{t+1} \in A` at time :math:`t+1`:
+
+.. math::
+
+    \int_A q_{t+1}(x_{t+1} \,|\, x_t) d x_{t+1} 
+
+where :math:`A` is a subset of :math:`\mathbb R^n`.
+
+The price :math:`\int_A q_{t+1}(x_{t+1} \,|\, x_t) d x_{t+1}` of such a claim depends on state :math:`x_t` because the prices of the :math:`x_{t+1}`-constituent
+securities depend on :math:`x_t` through the pricing kernel :math:`q(x_{t+1} \,|\, x_t)`.
+
+Let :math:`b(x_{t+1})` be a vector of state-contingent debt due at :math:`t+1`
+as a function of the :math:`t+1` state :math:`x_{t+1}`.
+
+Using the pricing kernel assumed in :eq:`cs_14`, the value at
+:math:`t` of :math:`b(x_{t+1})` is evidently
+
+.. math::
+
+    \beta \int b(x_{t+1}) \phi(x_{t+1} \,|\, A x_t, CC') d x_{t+1} = \beta  \mathbb E_t b_{t+1}
+
+
+In the complete markets setting, the consumer faces a sequence of budget
+constraints
+
+.. math::
+
+    c_t + b_t = y_t + \beta \mathbb E_t b_{t+1}, \quad t \geq 0
+
+
+Please note that
+
+.. math::
+
+    E_t b_{t+1} = \int \phi_{t+1}(x_{t+1} | x_t) b_{t+1}(x_{t+1}) d x_{t+1}
+
+which verifies that :math:`E_t b_{t+1}` is the **value** of time :math:`t+1` state-contingent claims issued by the consumer at time :math:`t`
+
+
+We can solve the time :math:`t` budget constraint forward to obtain
+
+.. math::
+
+    b_t = \mathbb E_t  \sum_{j=0}^\infty \beta^j (y_{t+j} - c_{t+j} )
+
+
+We assume as before that the consumer cares about the expected value
+of
+
+.. math::
+
+    \sum_{t=0}^\infty \beta^t u(c_t), \quad 0 < \beta < 1
+
+
+In the incomplete markets version of the model, we assumed that
+:math:`u(c_t) = - (c_t -\gamma)^2`, so that the above utility functional
+became
+
+.. math::
+
+    -\sum_{t=0}^\infty \beta^t ( c_t - \gamma)^2, \quad 0 < \beta < 1
+
+
+But in the complete markets version, it is tractable to assume a more general utility function that satisfies :math:`u' > 0` and :math:`u'' < 0`.
+
+The first-order conditions for the consumer's problem with complete
+markets and our assumption about Arrow securities prices are
+
+.. math::
+
+    u'(c_{t+1}) = u'(c_t) \quad \text{for all }  t\geq 0
+
+
+which again implies :math:`c_t = \bar c` for some :math:`\bar c`.
+
+So it follows that
+
+.. math::
+
+    b_t = \mathbb E_t \sum_{j=0}^\infty \beta^j (y_{t+j} - \bar c)
+
+
+or
+
+.. math::
+    :label: cs_15
+
+    b_t = S_y (I - \beta A)^{-1} x_t - \frac{1}{1-\beta} \bar c
+
+
+where :math:`\bar c` satisfies
+
+.. math::
+    :label: cs_16
+
+    \bar b_0 = S_y (I - \beta A)^{-1} x_0 - \frac{1}{1 - \beta } \bar c
+
+
+where :math:`\bar b_0` is an initial level of the consumer's debt, specified
+as a parameter of the problem.
+
+Thus, in the complete markets version of the consumption-smoothing
+model, :math:`c_t = \bar c, \forall t \geq 0` is determined by :eq:`cs_16`
+and the consumer's debt is a fixed function of
+the state :math:`x_t` described by :eq:`cs_15`.
+
+
+Please recall that in the LQ permanent income model studied in first lecture on the :doc:`permanent income model <perm_income>`, the state is 
+:math:`x_t, b_t`, where :math:`b_t` is a complicated function of past state vectors :math:`x_{t-j}`.
+
+Notice that in contrast to that incomplete markets model, in our complete markets model , at time $t$ the state vector is :math:`x_t` alone.
+
+
+Here's an example that shows how in this setting the availability of insurance against fluctuating nonfinancial income
+allows the consumer completely to smooth consumption across time and across states of the world
+
+.. code-block:: python3
+
+    def complete_ss(β, b0, x0, A, C, S_y, T=12):
+        """
+        Computes the path of consumption and debt for the previously described
+        complete markets model where exogenous income follows a linear
+        state space
+        """
+        # Create a linear state space for simulation purposes
+        # This adds "b" as a state to the linear state space system
+        # so that setting the seed places shocks in same place for
+        # both the complete and incomplete markets economy
+        # Atilde = np.vstack([np.hstack([A, np.zeros((A.shape[0], 1))]),
+        #                   np.zeros((1, A.shape[1] + 1))])
+        # Ctilde = np.vstack([C, np.zeros((1, 1))])
+        # S_ytilde = np.hstack([S_y, np.zeros((1, 1))])
+
+        lss = qe.LinearStateSpace(A, C, S_y, mu_0=x0)
+
+        # Add extra state to initial condition
+        # x0 = np.hstack([x0, np.zeros(1)])
+
+        # Compute the (I - β * A)^{-1}
+        rm = la.inv(np.eye(A.shape[0]) - β * A)
+
+        # Constant level of consumption
+        cbar = (1 - β) * (S_y @ rm @ x0 - b0)
+        c_hist = np.ones(T) * cbar
+
+        # Debt
+        x_hist, y_hist = lss.simulate(T)
+        b_hist = np.squeeze(S_y @ rm @ x_hist - cbar / (1 - β))
+
+
+        return c_hist, b_hist, np.squeeze(y_hist), x_hist
+
+
+    # Define parameters
+    N_simul = 80
+    α, ρ1, ρ2 = 10.0, 0.9, 0.0
+    σ = 1.0
+
+    A = np.array([[1., 0., 0.],
+                [α,  ρ1, ρ2],
+                [0., 1., 0.]])
+    C = np.array([[0.], [σ], [0.]])
+    S_y = np.array([[1,  1.0, 0.]])
+    β, b0 = 0.95, -10.0
+    x0 = np.array([1.0, α / (1 - ρ1), α / (1 - ρ1)])
+
+    # Do simulation for complete markets
+    s = np.random.randint(0, 10000)
+    np.random.seed(s)  # Seeds get set the same for both economies
+    out = complete_ss(β, b0, x0, A, C, S_y, 80)
+    c_hist_com, b_hist_com, y_hist_com, x_hist_com = out
+
+    fig, ax = plt.subplots(1, 2, figsize=(15, 5))
+
+    # Consumption plots
+    ax[0].set_title('Cons and income', fontsize=17)
+    ax[0].plot(np.arange(N_simul), c_hist_com, label='consumption')
+    ax[0].plot(np.arange(N_simul), y_hist_com, label='income', alpha=.6, linestyle='--')
+    ax[0].legend()
+    ax[0].set_xlabel('Periods')
+    ax[0].set_ylim([-5.0, 110])
+
+    # Debt plots
+    ax[1].set_title('Debt and income')
+    ax[1].plot(np.arange(N_simul), b_hist_com, label='debt')
+    ax[1].plot(np.arange(N_simul), y_hist_com, label='Income', alpha=.6, linestyle='--')
+    ax[1].legend()
+    ax[1].axhline(0, color='k')
+    ax[1].set_xlabel('Periods')
+
+    plt.show()
+
+
+Interpretation of Graph
+-----------------------
+
+In the above graph, please note that:
+
+-  nonfinancial income fluctuates in a stationary manner.
+
+-  consumption is completely constant.
+
+-  the consumer's debt fluctuates in a stationary manner; in fact, in
+   this case, because nonfinancial income is a first-order
+   autoregressive process, the consumer's debt is an exact affine function
+   (meaning linear plus a constant) of the consumer's nonfinancial
+   income.
+
+
+
+
+
+Incomplete Markets Version
+--------------------------
+
+
+The incomplete markets version of the model with nonfinancial income being governed by a linear state space system
+is described in the first lecture on the :doc:`permanent income model <perm_income>` and the followup
+lecture on  the :doc:`permanent income model <perm_income_cons>`.
+
+In that version, consumption follows a random walk and the consumer's debt follows a process with a unit root.
+
+
 Finite State Markov Income Process
 ----------------------------------
 
+We now turn to a finite-state Markov version of the model in which the consumer's  nonfinancial income is an exact function of a Markov state that
+takes one of :math:`N` values.
 
-In each version of the consumption-smoothing model, nonfinancial income is governed by a two-state Markov chain
+We'll start with a setting in which in each version of our consumption-smoothing models, nonfinancial income is governed by a two-state Markov chain
 (it's easy to generalize this to an :math:`N` state Markov chain).
 
 In particular, the *state of the world* is given by :math:`s_t \in \{1, 2\}` that follows
@@ -424,7 +692,7 @@ under the assumption of complete markets
             self.P = np.asarray(P)
             self.init = init
 
-        def simulate(self, N_simul=150, random_state=1):
+        def simulate(self, N_simul=80, random_state=1):
             """
             Parameters
             ----------
@@ -743,261 +1011,8 @@ income :math:`y_t`, notice that
    consumer's debt drifts in a "unit root" fashion in the incomplete
    markets economy.
 
-
-Linear State Space Version of Complete Markets Model
-====================================================
-
-Now we'll study a complete markets model adapted to  a setting with a continuous Markov state like that in the :doc:`first lecture on the permanent income model <perm_income>`.
-
-In that model, there are
-
-* incomplete markets: the consumer can trade only a single risk-free one-period bond bearing gross one-period risk-free interest rate equal to :math:`\beta^{-1}`.
-
-* the consumer's exogenous nonfinancial income is governed by a linear state space model driven by Gaussian shocks, the kind of model studied in an earlier lecture about :doc:`linear state space models <linear_models>`.
-
-We'll write down a complete markets counterpart of that model.
-
-Suppose that nonfinancial income is governed by the state
-space system
-
-.. math::
-
-    \begin{aligned}
-         x_{t+1} & = A x_t + C w_{t+1} \cr
-         y_t & = S_y x_t
-    \end{aligned}
-
-
-where :math:`x_t` is an :math:`n \times 1` vector and :math:`w_{t+1} \sim {\cal N}(0,I)` is IID over time.
-
-We again want  a natural counterpart of the Hall assumption that the one-period risk-free
-gross interest rate is :math:`\beta^{-1}`.
-
-Accordingly,  we assume that  the scaled prices
-of one-period ahead Arrow securities are
-
-.. math::
-    :label: cs_14
-
-    p_{t+1}(x_{t+1} \,|\, x_t) = \beta \phi(x_{t+1} \,|\, A x_t, CC')
-
-
-where :math:`\phi(\cdot \,|\, \mu, \Sigma)` is a multivariate Gaussian
-distribution with mean vector :math:`\mu` and covariance matrix
-:math:`\Sigma`.
-
-With the **pricing kernel** :math:`p_{t+1}(x_{t+1} \,|\, x_t)` in hand, we can price claims to consumption at time :math:`t+1` consumption that pay when
-:math:`x_{t+1} \in A` at time :math:`t+1`, contingent on the state at time :math:`t` being :math:`x_t`:
-
-.. math::
-
-    \int_A p_{t+1}(x_{t+1} \,|\, x_t) d x_{t+1} 
-
-where :math:`A` is a subset of :math:`\mathbb R^n`    
-
-Let :math:`b(x_{t+1})` be a vector of state-contingent debt due at :math:`t+1`
-as a function of the :math:`t+1` state :math:`x_{t+1}`.
-
-Using the pricing function assumed in :eq:`cs_14`, the value at
-:math:`t` of :math:`b(x_{t+1})` is evidently
-
-.. math::
-
-    \beta \int b(x_{t+1}) \phi(x_{t+1} \,|\, A x_t, CC') d x_{t+1} = \beta  \mathbb E_t b_{t+1}
-
-
-In the complete markets setting, the consumer faces a sequence of budget
-constraints
-
-.. math::
-
-    c_t + b_t = y_t + \beta \mathbb E_t b_{t+1}, \quad t \geq 0
-
-
-Please note that
-
-.. math::
-
-    E_t b_{t+1} = \int p_{t+1}(x_{t+1} | x_t) b_{t+1}(x_{t+1}) d x_{t+1}
-
-which verifies that :math:`E_t b_{t+1}` is the **value** of time :math:`t+1` state-contingent claims issued by the consumer at time :math:`t`
-
-
-We can solve the time :math:`t` budget constraint forward to obtain
-
-.. math::
-
-    b_t = \mathbb E_t  \sum_{j=0}^\infty \beta^j (y_{t+j} - c_{t+j} )
-
-
-We assume as before that the consumer cares about the expected value
-of
-
-.. math::
-
-    \sum_{t=0}^\infty \beta^t u(c_t), \quad 0 < \beta < 1
-
-
-In the incomplete markets version of the model, we assumed that
-:math:`u(c_t) = - (c_t -\gamma)^2`, so that the above utility functional
-became
-
-.. math::
-
-    -\sum_{t=0}^\infty \beta^t ( c_t - \gamma)^2, \quad 0 < \beta < 1
-
-
-But in the complete markets version, it is tractable to assume a more general utility function that satisfies :math:`u' > 0` and :math:`u'' < 0`.
-
-The first-order conditions for the consumer's problem with complete
-markets and our assumption about Arrow securities prices are
-
-.. math::
-
-    u'(c_{t+1}) = u'(c_t) \quad \text{for all }  t\geq 0
-
-
-which again implies :math:`c_t = \bar c` for some :math:`\bar c`.
-
-So it follows that
-
-.. math::
-
-    b_t = \mathbb E_t \sum_{j=0}^\infty \beta^j (y_{t+j} - \bar c)
-
-
-or
-
-.. math::
-    :label: cs_15
-
-    b_t = S_y (I - \beta A)^{-1} x_t - \frac{1}{1-\beta} \bar c
-
-
-where :math:`\bar c` satisfies
-
-.. math::
-    :label: cs_16
-
-    \bar b_0 = S_y (I - \beta A)^{-1} x_0 - \frac{1}{1 - \beta } \bar c
-
-
-where :math:`\bar b_0` is an initial level of the consumer's debt, specified
-as a parameter of the problem.
-
-Thus, in the complete markets version of the consumption-smoothing
-model, :math:`c_t = \bar c, \forall t \geq 0` is determined by :eq:`cs_16`
-and the consumer's debt is a fixed function of
-the state :math:`x_t` described by :eq:`cs_15`.
-
-
-Here's an example that shows how in this setting the availability of insurance against fluctuating nonfinancial income
-allows the consumer completely to smooth consumption across time and across states of the world
-
-.. code-block:: python3
-
-    def complete_ss(β, b0, x0, A, C, S_y, T=12):
-        """
-        Computes the path of consumption and debt for the previously described
-        complete markets model where exogenous income follows a linear
-        state space
-        """
-        # Create a linear state space for simulation purposes
-        # This adds "b" as a state to the linear state space system
-        # so that setting the seed places shocks in same place for
-        # both the complete and incomplete markets economy
-        # Atilde = np.vstack([np.hstack([A, np.zeros((A.shape[0], 1))]),
-        #                   np.zeros((1, A.shape[1] + 1))])
-        # Ctilde = np.vstack([C, np.zeros((1, 1))])
-        # S_ytilde = np.hstack([S_y, np.zeros((1, 1))])
-
-        lss = qe.LinearStateSpace(A, C, S_y, mu_0=x0)
-
-        # Add extra state to initial condition
-        # x0 = np.hstack([x0, np.zeros(1)])
-
-        # Compute the (I - β * A)^{-1}
-        rm = la.inv(np.eye(A.shape[0]) - β * A)
-
-        # Constant level of consumption
-        cbar = (1 - β) * (S_y @ rm @ x0 - b0)
-        c_hist = np.ones(T) * cbar
-
-        # Debt
-        x_hist, y_hist = lss.simulate(T)
-        b_hist = np.squeeze(S_y @ rm @ x_hist - cbar / (1 - β))
-
-
-        return c_hist, b_hist, np.squeeze(y_hist), x_hist
-
-
-    # Define parameters
-    N_simul = 150
-    α, ρ1, ρ2 = 10.0, 0.9, 0.0
-    σ = 1.0
-
-    A = np.array([[1., 0., 0.],
-                [α,  ρ1, ρ2],
-                [0., 1., 0.]])
-    C = np.array([[0.], [σ], [0.]])
-    S_y = np.array([[1,  1.0, 0.]])
-    β, b0 = 0.95, -10.0
-    x0 = np.array([1.0, α / (1 - ρ1), α / (1 - ρ1)])
-
-    # Do simulation for complete markets
-    s = np.random.randint(0, 10000)
-    np.random.seed(s)  # Seeds get set the same for both economies
-    out = complete_ss(β, b0, x0, A, C, S_y, 150)
-    c_hist_com, b_hist_com, y_hist_com, x_hist_com = out
-
-    fig, ax = plt.subplots(1, 2, figsize=(15, 5))
-
-    # Consumption plots
-    ax[0].set_title('Cons and income', fontsize=17)
-    ax[0].plot(np.arange(N_simul), c_hist_com, label='consumption')
-    ax[0].plot(np.arange(N_simul), y_hist_com, label='income', alpha=.6, 
-               linestyle='--')
-    ax[0].legend()
-    ax[0].set_xlabel('Periods')
-    ax[0].set_ylim([-5.0, 110])
-
-    # Debt plots
-    ax[1].set_title('Debt and income')
-    ax[1].plot(np.arange(N_simul), b_hist_com, label='debt')
-    ax[1].plot(np.arange(N_simul), y_hist_com, label='Income', alpha=.6,
-               linestyle='--')
-    ax[1].legend()
-    ax[1].axhline(0, color='k')
-    ax[1].set_xlabel('Periods')
-
-    plt.show()
-
-
-Interpretation of Graph
------------------------
-
-In the above graph, please note that:
-
--  nonfinancial income fluctuates in a stationary manner.
-
--  consumption is completely constant.
-
--  the consumer's debt fluctuates in a stationary manner; in fact, in
-   this case, because nonfinancial income is a first-order
-   autoregressive process, the consumer's debt is an exact affine function
-   (meaning linear plus a constant) of the consumer's nonfinancial
-   income.
-
-
-
-
-
-Incomplete Markets Version
---------------------------
-
-
-The incomplete markets version of the model with nonfinancial income being governed by a linear state space system
-is described in the first lecture on the :doc:`permanent income model <perm_income>` and the followup
-lecture on  the :doc:`permanent income model <perm_income_cons>`.
-
-In that version, consumption follows a random walk and the consumer's debt follows a process with a unit root.
+A sequel
+---------
+
+In :doc:`tax smoothing with complete and incomplete markets <smoothing_tax>`, we reinterpret the mathematics and Python code presented in this lecture in order
+to construct tax-smoothing models in the incomplete markets tradition of Barro :cite:`Barro1979` as well as in the complete markets tradition of Lucas and Stokey :cite:`LucasStokey1983`.

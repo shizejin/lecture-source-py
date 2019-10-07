@@ -24,13 +24,11 @@ In addition to what's in Anaconda, this lecture uses the  library:
 
 Overview
 ========
-This lecture should  be viewed as a followup to :doc:`smoothing` 
+This lecture describes two types of tax-smoothing models that are counterparts to the consumption-smoothing models in :doc:`smoothing`.
 
-It describes two types of tax-smoothing models that are counterparts to the consumption-smoothing models in :doc:`smoothing`
+* one is in the **complete markets** tradition of Lucas and Stokey :cite:`LucasStokey1983`.
 
-* one is in the **complete markets** tradition of Lucas and Stokey :cite:`LucasStokey1983`
-
-* the other is in the **incomplete markets** tradition  of Hall :cite:`Hall1978` and Barro :cite:`Barro1979`
+* the other is in the **incomplete markets** tradition  of Hall :cite:`Hall1978` and Barro :cite:`Barro1979`.
 
 *Complete markets* allow a  government to buy or sell claims contingent on all possible states of the world.
 
@@ -72,7 +70,7 @@ It is convenient that for each version of a consumption-smoothing model, there i
 
 
 Convenient Isomorphism
-^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 We can convert  the consumption-smoothing models in lecture :doc:`smoothing` into  tax-smoothing models by setting 
 :math:`c_t = T_t` and :math:`G_t = y_t`, where :math:`T_t` is total tax
@@ -112,10 +110,10 @@ taxes have on equilibrium prices and allocations
 Link to History
 ^^^^^^^^^^^^^^^^^^
 
-For those who love history, President Jefferson's Secretary of Treasury Albert Gallatin (1807) :cite:`Gallatin` advocated what
-    amounts to Barro's model :cite:`Barro1979`
+For those who love history, President Thomas Jefferson's Secretary of Treasury Albert Gallatin (1807) :cite:`Gallatin` advocated what 
+amounts to Barro's model :cite:`Barro1979`
 
-GGHHGGHH
+
 
 To exploit the isomorphism between consumption-smoothing and tax-smoothing models, we bring in code from
 :doc:`smoothing` 
@@ -158,7 +156,7 @@ under the assumption of complete markets
             self.P = np.asarray(P)
             self.init = init
 
-        def simulate(self, N_simul=150, random_state=1):
+        def simulate(self, N_simul=80, random_state=1):
             """
             Parameters
             ----------
@@ -252,7 +250,7 @@ under the assumption of complete markets
         return c_path, b_path[:-1], y[s_path]
 
 
-GGHHGGHH
+
 
 
 
@@ -574,238 +572,14 @@ We provide further examples of tax-smoothing models with a finite Markov state i
 
 
 
-Tax-smoothing interpretation
------------------------------
-
-In the tax-smoothing interpretation of the preceding  complete markets consumption-smoothing model,  a government  faces a sequence of budget
-constraints
-
-.. math::
-
-    T_t + b_t = g_t + \beta \mathbb E_t b_{t+1}, \quad t \geq 0
-
-where :math:`T_t` is tax revenues, :math:`b_t` are receipts at :math:`t` from contingent claims that the government had *purchased* at time :math:`t`,
-and
-
-.. math::
-
-    \mathbb E_t b_{t+1} \equiv \int p_{t+1}(x_{t+1} | x_t) b_{t+1}(x_{t+1}) d x_{t+1}
-
-is the value of time :math:`t+1` state-contingent claims purchased  by the government  at time :math:`t`
-
-
-As above with the consumption-smoothing model, we can solve the time :math:`t` budget constraint forward to obtain
-
-.. math::
-
-    b_t = \mathbb E_t  \sum_{j=0}^\infty \beta^j (g_{t+j} - T_{t+j} )
-
-which can be rearranged to become
-
-.. math::
-
-    \mathbb E_t  \sum_{j=0}^\infty \beta^j g_{t+j}  = b_t + \mathbb E_t \sum_{j=0}^\infty \beta^j T_{t+j}
-
-which states that the present value of government purchases equals the value of government assets at :math:`t` plus the present value tax receipts
 
 
 
-
-
-Government Manipulation of Arrow Securities Prices
---------------------------------------------------
-
-In :doc:`optimal taxation in an LQ economy<lqramsey>` and :doc:`recursive optimal taxation <opt_tax_recur>`, we study **complete-markets**
-models in which the government recognizes that it can manipulate  Arrow securities prices.
-
-
-In :doc:`optimal taxation with incomplete markets <amss>`, we study an **incomplete-markets** model in which the government  manipulates asset prices.
-
-
-
-
-***********************************************
 More Finite Markov Chain Tax-Smoothing Examples
-***********************************************
+=================================================
 
-.. index::
-    single: Tax
+For thinking about some episodes in the fiscal history of the United States, we find it interesting to study a few more examples that we now present.
 
-.. contents:: :depth: 2
-
-In addition to what's in Anaconda, this lecture uses the library:
-
-.. code-block:: ipython
-  :class: hide-output
-
-  !pip install --upgrade quantecon
-
-Import dependent packages.
-
-.. code-block:: ipython
-
-    import numpy as np
-    import quantecon as qe
-    import matplotlib.pyplot as plt
-    %matplotlib inline
-
-Define the `ConsumptionProblem` class and functions for computing return rates.
-
-.. code-block:: python3
-
-    class ConsumptionProblem:
-        """
-        The data for a consumption problem, including some default values.
-        """
-
-        def __init__(self,
-                     β=.96,
-                     y=[2, 1.5],
-                     b0=3,
-                     P=[[.8, .2],
-                        [.4, .6]],
-                     init=0):
-            """
-            Parameters
-            ----------
-
-            β : discount factor
-            y : list containing the two income levels
-            b0 : debt in period 0 (= initial state debt level)
-            P : 2x2 transition matrix
-            init : index of initial state s0
-            """
-            self.β = β
-            self.y = np.asarray(y)
-            self.b0 = b0
-            self.P = np.asarray(P)
-            self.init = init
-
-        def simulate(self, N_simul=150, random_state=1):
-            """
-            Parameters
-            ----------
-
-            N_simul : number of periods for simulation
-            random_state : random state for simulating Markov chain
-            """
-            # For the simulation define a quantecon MC class
-            mc = qe.MarkovChain(self.P)
-            s_path = mc.simulate(N_simul, init=self.init, random_state=random_state)
-
-            return s_path
-
-
-    def consumption_complete(cp):
-        """
-        Computes endogenous values for the complete market case.
-
-        Parameters
-        ----------
-
-        cp : instance of ConsumptionProblem
-
-        Returns
-        -------
-
-            c_bar : constant consumption
-            b : optimal debt in each state
-
-        associated with the price system
-
-            Q = β * P
-        """
-        β, P, y, b0, init = cp.β, cp.P, cp.y, cp.b0, cp.init   # Unpack
-
-        Q = β * P                               # assumed price system
-
-        # construct matrices of augmented equation system
-        n = P.shape[0] + 1
-
-        y_aug = np.empty((n, 1))
-        y_aug[0, 0] = y[init] - b0
-        y_aug[1:, 0] = y
-
-        Q_aug = np.zeros((n, n))
-        Q_aug[0, 1:] = Q[init, :]
-        Q_aug[1:, 1:] = Q
-
-        A = np.zeros((n, n))
-        A[:, 0] = 1
-        A[1:, 1:] = np.eye(n-1)
-
-        x = np.linalg.inv(A - Q_aug) @ y_aug
-
-        c_bar = x[0, 0]
-        b = x[1:, 0]
-
-        return c_bar, b
-
-
-    def consumption_incomplete(cp, s_path):
-        """
-        Computes endogenous values for the incomplete market case.
-
-        Parameters
-        ----------
-
-        cp : instance of ConsumptionProblem
-        s_path : the path of states
-        """
-        β, P, y, b0 = cp.β, cp.P, cp.y, cp.b0  # Unpack
-
-        N_simul = len(s_path)
-
-        # Useful variables
-        n = len(y)
-        y.shape = (n, 1)
-        v = np.linalg.inv(np.eye(n) - β * P) @ y
-
-        # Store consumption and debt path
-        b_path, c_path = np.ones(N_simul+1), np.ones(N_simul)
-        b_path[0] = b0
-
-        # Optimal decisions from (12) and (13)
-        db = ((1 - β) * v - y) / β
-
-        for i, s in enumerate(s_path):
-            c_path[i] = (1 - β) * (v - b_path[i] * np.ones((n, 1)))[s, 0]
-            b_path[i + 1] = b_path[i] + db[s, 0]
-
-        return c_path, b_path[:-1], y[s_path]
-
-.. code-block:: python3
-
-    def ex_post_gross_return(b, cp):
-        """
-        calculate the ex post one-period gross return on the portfolio
-        of government assets, given b and Q.
-        """
-        Q = cp.β * cp.P
-
-        values = Q @ b
-
-        n = len(b)
-        R = np.zeros((n, n))
-
-        for i in range(n):
-            ind = cp.P[i, :] != 0
-            R[i, ind] = b[ind] / values[i]
-
-        return R
-
-    def cumulative_return(s_path, R):
-        """
-        compute cumulative return from holding 1 unit market portfolio
-        of government bonds, given some simulated state path.
-        """
-        T = len(s_path)
-
-        RT_path = np.empty(T)
-        RT_path[0] = 1
-        RT_path[1:] = np.cumprod([R[s_path[t], s_path[t+1]] for t in range(T-1)])
-
-        return RT_path
 
 
 Here we give more examples of tax-smoothing models with both complete and incomplete markets in an :math:`N` state Markov setting.
@@ -822,7 +596,7 @@ and displaying the results, we define a new class below.
         construct a tax-smoothing example, by relabeling consumption problem class.
         """
         def __init__(self, g, P, b0, states, β=.96,
-                     init=0, s_path=None, N_simul=150, random_state=1):
+                     init=0, s_path=None, N_simul=80, random_state=1):
 
             self.states = states # state names
 
@@ -1137,3 +911,56 @@ with government expenditure levels for the seven states being
 
 	ts_ex5 = TaxSmoothingExample(g_ex5, P_ex5, b0_ex5, states_ex5, N_simul=7, random_state=1)
 	ts_ex5.display()
+
+
+
+Tax-smoothing interpretation of continuous-state Gaussian model
+----------------------------------------------------------------
+
+In the tax-smoothing interpretation of the  complete markets consumption-smoothing model with a continuous state space that we presented in 
+the lecture :doc:`consumption smoothing with complete and incomplete markets<smoothing>`, we simply relabel variables.
+
+Thus,  a government  faces a sequence of budget constraints
+
+.. math::
+
+    T_t + b_t = g_t + \beta \mathbb E_t b_{t+1}, \quad t \geq 0
+
+where :math:`T_t` is tax revenues, :math:`b_t` are receipts at :math:`t` from contingent claims that the government had *purchased* at time :math:`t-1`,
+and
+
+.. math::
+
+    \mathbb E_t b_{t+1} \equiv \int q_{t+1}(x_{t+1} | x_t) b_{t+1}(x_{t+1}) d x_{t+1}
+
+is the value of time :math:`t+1` state-contingent claims purchased  by the government  at time :math:`t`
+
+
+As above with the consumption-smoothing model, we can solve the time :math:`t` budget constraint forward to obtain
+
+.. math::
+
+    b_t = \mathbb E_t  \sum_{j=0}^\infty \beta^j (g_{t+j} - T_{t+j} )
+
+which can be rearranged to become
+
+.. math::
+
+    \mathbb E_t  \sum_{j=0}^\infty \beta^j g_{t+j}  = b_t + \mathbb E_t \sum_{j=0}^\infty \beta^j T_{t+j}
+
+which states that the present value of government purchases equals the value of government assets at :math:`t` plus the present value tax receipts.
+
+With these relabelings, examples presented in :doc:`consumption smoothing with complete and incomplete markets<smoothing>` can be interpreted as tax-smoothing models.
+
+
+
+
+Government Manipulation of Arrow Securities Prices
+--------------------------------------------------
+
+In :doc:`optimal taxation in an LQ economy<lqramsey>` and :doc:`recursive optimal taxation <opt_tax_recur>`, we study **complete-markets**
+models in which the government recognizes that it can manipulate  Arrow securities prices.
+
+
+In :doc:`optimal taxation with incomplete markets <amss>`, we study an **incomplete-markets** model in which the government  manipulates asset prices.
+
