@@ -336,12 +336,12 @@ allows the consumer completely to smooth consumption across time and across stat
     fig, ax = plt.subplots(1, 2, figsize=(15, 5))
 
     # Consumption plots
-    ax[0].set_title('Cons and income', fontsize=17)
+    ax[0].set_title('Consumption and income')
     ax[0].plot(np.arange(N_simul), c_hist_com, label='consumption')
     ax[0].plot(np.arange(N_simul), y_hist_com, label='income', alpha=.6, linestyle='--')
     ax[0].legend()
     ax[0].set_xlabel('Periods')
-    ax[0].set_ylim([-5.0, 110])
+    ax[0].set_ylim([80, 120])
 
     # Debt plots
     ax[1].set_title('Debt and income')

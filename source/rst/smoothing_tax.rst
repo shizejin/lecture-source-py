@@ -624,34 +624,39 @@ and displaying the results, we define a new class below.
         def display(self):
 
             # plot graphs
-            fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-
             N = len(self.T_path)
 
-            ax[0].set_title('Tax collection paths')
-            ax[0].plot(np.arange(N), self.T_path, label='incomplete market')
-            ax[0].plot(np.arange(N), self.T_bar * np.ones(N), label='complete market')
-            ax[0].plot(np.arange(N), self.g_path, label='govt expenditures', alpha=.6, ls='--')
-            ax[0].legend()
-            ax[0].set_xlabel('Periods')
+            plt.figure()
+            plt.title('Tax collection paths')
+            plt.plot(np.arange(N), self.T_path, label='incomplete market')
+            plt.plot(np.arange(N), self.T_bar * np.ones(N), label='complete market')
+            plt.plot(np.arange(N), self.g_path, label='govt expenditures', alpha=.6, ls='--')
+            plt.legend()
+            plt.xlabel('Periods')
+            plt.show()
 
-            ax[1].set_title('Government debt paths')
-            ax[1].plot(np.arange(N), -self.asset_path, label='incomplete market')
-            ax[1].plot(np.arange(N), -self.b[self.s_path], label='complete market')
-            ax[1].plot(np.arange(N), self.g_path, label='govt expenditures', ls='--')
-            ax[1].plot(np.arange(N), self.debt_value[self.s_path], label="today's value of debts")
-            ax[1].legend()
-            ax[1].axhline(0, color='k', ls='--')
-            ax[1].set_xlabel('Periods')
+            plt.title('Government debt paths')
+            plt.plot(np.arange(N), -self.asset_path, label='incomplete market')
+            plt.plot(np.arange(N), -self.b[self.s_path], label='complete market')
+            plt.plot(np.arange(N), self.g_path, label='govt expenditures', ls='--')
+            plt.plot(np.arange(N), self.debt_value[self.s_path], label="today's value of debts")
+            plt.legend()
+            plt.axhline(0, color='k', ls='--')
+            plt.xlabel('Periods')
+            plt.show()
 
-            ax[2].set_title('Cumulative return path (complete market)')
-            ax[2].plot(np.arange(N), self.RT_path, color='b')
-            ax[2].set_xlabel('Periods')
-            ax[2].set_ylabel('Cumulative return', color='b')
+            fig, ax = plt.subplots()
+            ax.set_title('Cumulative return path (complete market)')
+            line1 = ax.plot(np.arange(N), self.RT_path)[0]
+            c1 = line1.get_color()
+            ax.set_xlabel('Periods')
+            ax.set_ylabel('Cumulative return', color=c1)
 
-            ax2_ = ax[2].twinx()
-            ax2_.plot(np.arange(N), self.g_path, ls='--', color='g')
-            ax2_.set_ylabel('Government expenditures', color='g')
+            ax_ = ax.twinx()
+            ax_._get_lines.prop_cycler = ax._get_lines.prop_cycler
+            line2 = ax_.plot(np.arange(N), self.g_path, ls='--')[0]
+            c2 = line2.get_color()
+            ax_.set_ylabel('Government expenditures', color=c2)
 
             plt.show()
 
@@ -754,7 +759,6 @@ that exceeds its prewar level.
 .. code-block:: python3
 
     # The following shows the use of the wrapper class when a specific state path is given
-    # (for Tom)
     s_path = [0, 0, 1, 1, 2]
     ts_s_path = TaxSmoothingExample(g_ex1, P_ex1, b0_ex1, states_ex1, s_path=s_path)
     ts_s_path.display()
